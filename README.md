@@ -72,7 +72,11 @@ You will first need the latest version of node and npm.
   ```sh
   npm install -g truffle
   ```
-
+* ganache-cli
+  ```sh
+  npm install -g ganache-cli
+  ```  
+  
 ### Installation
 
 1. Clone the repo
