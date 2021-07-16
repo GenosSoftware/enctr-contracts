@@ -91,19 +91,19 @@ Once you have this all set up you will have to use the ganache-cli to fork the B
 
 Open up a new terminal and execute:
   ```sh
-  ganache-cli -f https://bsc-dataseed.binance.org -m MNEMONIC-BIP39-STYLE // -f is fork and -m is the mnemonic for your HD wallet (only use for development)
+  ganache-cli -f https://bsc-dataseed.binance.org -m MNEMONIC-BIP39-STYLE ## -f is fork and -m is the mnemonic for your HD wallet (only use for development)
   ```
 
 Then, open up another terminal window and run:
 
   ```sh
-  truffle migrate --network develop // this is to take the contract in the contracts folder, compile and deploy to ganache
+  truffle migrate --network develop ## this is to take the contract in the contracts folder, compile and deploy to ganache
   ```
   
 Once, you have this, the contract can be interacted with using truffle console.
 
   ```sh
-  truffle console --network develop // interacting with the deployed contract on ganache-cli
+  truffle console --network develop ## interacting with the deployed contract on ganache-cli
   ```
   
 Now, you can start interacting with the contract. Check out [Interacting with the Contract](https://www.trufflesuite.com/docs/truffle/getting-started/interacting-with-your-contracts)
