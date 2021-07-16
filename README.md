@@ -41,6 +41,8 @@
 
 Encountr - the first ever dEsports platform running on Binance Smart Chain and Ethereum.
 
+[Whitepaper](https://github.com/LukaASoban/encountr/blob/main/EncountrWhitepaperV2.pdf)
+
 
 ### Built With
 
@@ -109,7 +111,7 @@ Now, you can start interacting with the contract. Check out [Interacting with th
   let instance = await Encountr.deployed()
   instance.getBalance(accounts[0])
   ```
-Check the Ecountr.sol file for the other functions that can be called.
+Check the Encountr.sol file for the other functions that can be called.
 
 
 <!-- ROADMAP -->
