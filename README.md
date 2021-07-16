@@ -4,7 +4,7 @@
 <br />
 <p align="center">
   <a href="https://github.com/LukaASoban/encountr">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
+    <img src="logo.png" alt="Logo" width="80" height="80">
   </a>
 
   <h3 align="center">Encountr</h3>
@@ -75,7 +75,7 @@ You will first need the latest version of node and npm.
 
 1. Clone the repo
    ```sh
-   git clone https://github.com/LukaASoban/encountr/encountr.git
+   git clone https://github.com/LukaASoban/encountr.git
    ```
 2. Install NPM packages
    ```sh
