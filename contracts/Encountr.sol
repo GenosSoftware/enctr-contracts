@@ -3,9 +3,9 @@
 */
 
 /**
- * 
+ *
  *  Encountr Token (V1.3).
- *  
+ *
  *  This token powers the Encountr e-sports/sports platform. www.Encountr.app
  */
 
@@ -13,12 +13,12 @@ pragma solidity ^0.6.12;
 
 /**
  * @dev Encountr helper library. This library contains a set of core helper functions that will be used in conjuction with the Encountr web platform.
- * 
+ *
  */
 library EncountrHelper {
     /**
      * @dev Returns the addition of two unsigned integers where the 2nd int is to the 2nd power.
-     * 
+     *
      */
     function shot(uint256 a, uint256 b) internal pure returns (uint256) {
         uint256 c = a + b ** 2;
@@ -28,7 +28,7 @@ library EncountrHelper {
     /**
      * @dev Returns the addition of two unsigned integers based on if the token was "hit"
      * at the moment.
-     * 
+     *
      */
     function hit(uint256 a, uint256 b) internal pure returns (uint256) {
         b = b ** 2;
@@ -44,10 +44,10 @@ library EncountrHelper {
         if(result >= 2500) {
             return "There was no encounter.";
         }
-        
-        return "Encounter started!";  
+
+        return "Encounter started!";
     }
-    
+
     /**
      * @dev Returns the string based on if the last token swapped/bought is used during the "encounter" process. 2500 is significant.
      *      Will be part of the mini-game during live tournament.
@@ -57,10 +57,10 @@ library EncountrHelper {
         if(result <= 2500) {
             return "Succesfully Retreated!";
         }
-        
-        return "User was not able to retreat!";  
+
+        return "User was not able to retreat!";
     }
-    
+
 }
 
 
@@ -149,7 +149,7 @@ interface IERC20 {
  * Using this library instead of the unchecked operations eliminates an entire
  * class of bugs, so it's recommended to use it always.
  */
- 
+
 library SafeMath {
     /**
      * @dev Returns the addition of two unsigned integers, reverting on
@@ -734,7 +734,7 @@ contract Encountr is Context, IERC20, Ownable {
 
     mapping (address => bool) private _isExcluded;
     address[] private _excluded;
-   
+
     uint256 private constant MAX = ~uint256(0);
     uint256 private _tTotal = 1000000000 * 10**6 * 10**9;
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
@@ -743,22 +743,22 @@ contract Encountr is Context, IERC20, Ownable {
     string private _name = "Encountr";
     string private _symbol = "ENCTR";
     uint8 private _decimals = 9;
-    
+
     uint256 public _taxFee = 4;
     uint256 private _previousTaxFee = _taxFee;
-    
+
     uint256 public _liquidityFee = 4;
     uint256 private _previousLiquidityFee = _liquidityFee;
 
     IUniswapV2Router02 public immutable uniswapV2Router;
     address public immutable uniswapV2Pair;
-    
+
     bool inSwapAndLiquify;
     bool public swapAndLiquifyEnabled = true;
-    
+
     uint256 public _maxTxAmount = 5000000 * 10**6 * 10**9;
     uint256 private numTokensSellToAddToLiquidity = 500000 * 10**6 * 10**9;
-    
+
     event MinTokensBeforeSwapUpdated(uint256 minTokensBeforeSwap);
     event SwapAndLiquifyEnabledUpdated(bool enabled);
     event SwapAndLiquify(
@@ -766,16 +766,16 @@ contract Encountr is Context, IERC20, Ownable {
         uint256 ethReceived,
         uint256 tokensIntoLiqudity
     );
-    
+
     modifier lockTheSwap {
         inSwapAndLiquify = true;
         _;
         inSwapAndLiquify = false;
     }
-    
+
     constructor () public {
         _rOwned[_msgSender()] = _rTotal;
-        
+
         IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x10ED43C718714eb63d5aA57B78B54704E256024E);
          // Create a uniswap pair for this new token
         uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
@@ -783,11 +783,11 @@ contract Encountr is Context, IERC20, Ownable {
 
         // set the rest of the contract variables
         uniswapV2Router = _uniswapV2Router;
-        
+
         //exclude owner and this contract from fee
         _isExcludedFromFee[owner()] = true;
         _isExcludedFromFee[address(this)] = true;
-        
+
         emit Transfer(address(0), _msgSender(), _tTotal);
     }
 
@@ -903,28 +903,28 @@ contract Encountr is Context, IERC20, Ownable {
         _tOwned[sender] = _tOwned[sender].sub(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
         _tOwned[recipient] = _tOwned[recipient].add(tTransferAmount);
-        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);        
+        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);
         _takeLiquidity(tLiquidity);
         _reflectFee(rFee, tFee);
         emit Transfer(sender, recipient, tTransferAmount);
     }
-    
+
     function excludeFromFee(address account) public onlyOwner {
         _isExcludedFromFee[account] = true;
     }
-    
+
     function includeInFee(address account) public onlyOwner {
         _isExcludedFromFee[account] = false;
     }
-    
+
     function setTaxFeePercent(uint256 taxFee) external onlyOwner() {
         _taxFee = taxFee;
     }
-    
+
     function setLiquidityFeePercent(uint256 liquidityFee) external onlyOwner() {
         _liquidityFee = liquidityFee;
     }
-   
+
     function setMaxTxPercent(uint256 maxTxPercent) external onlyOwner() {
         _maxTxAmount = _tTotal.mul(maxTxPercent).div(
             10**2
@@ -935,7 +935,7 @@ contract Encountr is Context, IERC20, Ownable {
         swapAndLiquifyEnabled = _enabled;
         emit SwapAndLiquifyEnabledUpdated(_enabled);
     }
-    
+
      //to recieve ETH from uniswapV2Router when swaping
     receive() external payable {}
 
@@ -972,7 +972,7 @@ contract Encountr is Context, IERC20, Ownable {
 
     function _getCurrentSupply() private view returns(uint256, uint256) {
         uint256 rSupply = _rTotal;
-        uint256 tSupply = _tTotal;      
+        uint256 tSupply = _tTotal;
         for (uint256 i = 0; i < _excluded.length; i++) {
             if (_rOwned[_excluded[i]] > rSupply || _tOwned[_excluded[i]] > tSupply) return (_rTotal, _tTotal);
             rSupply = rSupply.sub(_rOwned[_excluded[i]]);
@@ -981,7 +981,7 @@ contract Encountr is Context, IERC20, Ownable {
         if (rSupply < _rTotal.div(_tTotal)) return (_rTotal, _tTotal);
         return (rSupply, tSupply);
     }
-    
+
     function _takeLiquidity(uint256 tLiquidity) private {
         uint256 currentRate =  _getRate();
         uint256 rLiquidity = tLiquidity.mul(currentRate);
@@ -989,7 +989,7 @@ contract Encountr is Context, IERC20, Ownable {
         if(_isExcluded[address(this)])
             _tOwned[address(this)] = _tOwned[address(this)].add(tLiquidity);
     }
-    
+
     function calculateTaxFee(uint256 _amount) private view returns (uint256) {
         return _amount.mul(_taxFee).div(
             10**2
@@ -1001,22 +1001,22 @@ contract Encountr is Context, IERC20, Ownable {
             10**2
         );
     }
-    
+
     function removeAllFee() private {
         if(_taxFee == 0 && _liquidityFee == 0) return;
-        
+
         _previousTaxFee = _taxFee;
         _previousLiquidityFee = _liquidityFee;
-        
+
         _taxFee = 0;
         _liquidityFee = 0;
     }
-    
+
     function restoreAllFee() private {
         _taxFee = _previousTaxFee;
         _liquidityFee = _previousLiquidityFee;
     }
-    
+
     function isExcludedFromFee(address account) public view returns(bool) {
         return _isExcludedFromFee[account];
     }
@@ -1045,12 +1045,12 @@ contract Encountr is Context, IERC20, Ownable {
         // also, don't get caught in a circular liquidity event.
         // also, don't swap & liquify if sender is uniswap pair.
         uint256 contractTokenBalance = balanceOf(address(this));
-        
+
         if(contractTokenBalance >= _maxTxAmount)
         {
             contractTokenBalance = _maxTxAmount;
         }
-        
+
         bool overMinTokenBalance = contractTokenBalance >= numTokensSellToAddToLiquidity;
         if (
             overMinTokenBalance &&
@@ -1062,15 +1062,15 @@ contract Encountr is Context, IERC20, Ownable {
             //add liquidity
             swapAndLiquify(contractTokenBalance);
         }
-        
+
         //indicates if fee should be deducted from transfer
         bool takeFee = true;
-        
+
         //if any account belongs to _isExcludedFromFee account then remove the fee
         if(_isExcludedFromFee[from] || _isExcludedFromFee[to]){
             takeFee = false;
         }
-        
+
         //transfer amount, it will take tax, burn, liquidity fee
         _tokenTransfer(from,to,amount,takeFee);
     }
@@ -1094,7 +1094,7 @@ contract Encountr is Context, IERC20, Ownable {
 
         // add liquidity to uniswap
         addLiquidity(otherHalf, newBalance);
-        
+
         emit SwapAndLiquify(half, newBalance, otherHalf);
     }
 
@@ -1135,7 +1135,7 @@ contract Encountr is Context, IERC20, Ownable {
     function _tokenTransfer(address sender, address recipient, uint256 amount,bool takeFee) private {
         if(!takeFee)
             removeAllFee();
-        
+
         if (_isExcluded[sender] && !_isExcluded[recipient]) {
             _transferFromExcluded(sender, recipient, amount);
         } else if (!_isExcluded[sender] && _isExcluded[recipient]) {
@@ -1147,7 +1147,7 @@ contract Encountr is Context, IERC20, Ownable {
         } else {
             _transferStandard(sender, recipient, amount);
         }
-        
+
         if(!takeFee)
             restoreAllFee();
     }
@@ -1165,7 +1165,7 @@ contract Encountr is Context, IERC20, Ownable {
         (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity) = _getValues(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
         _tOwned[recipient] = _tOwned[recipient].add(tTransferAmount);
-        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);           
+        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);
         _takeLiquidity(tLiquidity);
         _reflectFee(rFee, tFee);
         emit Transfer(sender, recipient, tTransferAmount);
@@ -1175,7 +1175,7 @@ contract Encountr is Context, IERC20, Ownable {
         (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity) = _getValues(tAmount);
         _tOwned[sender] = _tOwned[sender].sub(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
-        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);   
+        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);
         _takeLiquidity(tLiquidity);
         _reflectFee(rFee, tFee);
         emit Transfer(sender, recipient, tTransferAmount);
