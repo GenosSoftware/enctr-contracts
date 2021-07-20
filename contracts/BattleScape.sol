@@ -13,6 +13,7 @@ struct Wager {
 
 contract BattleScape is Initializable {
   event WagerCreated(address indexed evt, uint256 indexed outcome, uint256 amount);
+  event WagerCancelled(address indexed evt, address indexed player);
 
   mapping(address => mapping(address => Wager)) public _wagers;
   Encountr e;
@@ -37,5 +38,17 @@ contract BattleScape is Initializable {
 
   function getWager(address evt) public view returns (uint256, uint256) {
     return (_wagers[msg.sender][evt].outcome, _wagers[msg.sender][evt].amount);
+  }
+
+  function cancelWager(address payable evt) public {
+    uint256 amount = _wagers[msg.sender][evt].amount;
+    require(amount > 0, "no bet to cancel");
+    require(e.allowance(evt, address(this)) >= amount, "check token allowance");
+
+    bool success = e.transferFrom(evt, msg.sender, amount);
+    require(success, "unable to return wager");
+
+    _wagers[msg.sender][evt] = Wager(0, 0);
+    emit WagerCancelled(evt, msg.sender);
   }
 }
