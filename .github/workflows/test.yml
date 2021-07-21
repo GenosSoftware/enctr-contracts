@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v2.3.0
+
+      - name: Test dependencies
+        run: |
+          sudo npm install -g ganache-cli truffle
+
+      - name: Ganache
+        run: ganache-cli -q -f https://bsc-dataseed.binance.org -m MNEMONIC-BIP39-STYLE &
+
+      - name: Install
+        run: |
+          sudo mkdir -p $HOME/.config/truffle
+          sudo chown -R runner $HOME/.config/truffle
+          sudo chmod -R a+rwx $HOME/.config
+          npm install
+
+      - name: Test
+        run: truffle test --network develop
