@@ -28,6 +28,7 @@ contract BattleScape is Initializable, Context {
 
   event WagerCreated(address indexed enctr, uint256 indexed outcome, uint256 amount);
   event WagerCancelled(address indexed enctr, address indexed player);
+  event EarningsCollected(address indexed enctr, address indexed player, uint256 earnings);
   event EnctrFinished(address indexed enctr, uint256 indexed actualOutcome);
 
   mapping(address => Enctr) public _enctrs;
@@ -75,7 +76,7 @@ contract BattleScape is Initializable, Context {
     */
   function finishEnctr(uint256 actualOutcome, uint256 amount) public {
     require(_enctrs[_msgSender()].actualOutcome == 0, "the outcome has already been set");
-    _enctrs[_msgSender()].actualOutcome = outcome;
+    _enctrs[_msgSender()].actualOutcome = actualOutcome;
     _enctrs[_msgSender()].wageredAmountForActualOutcome = amount;
 
     emit EnctrFinished(_msgSender(), actualOutcome);
@@ -85,7 +86,7 @@ contract BattleScape is Initializable, Context {
    * @dev Calculates the earnings of the player depending on the percentage of tokens contributed to winners wagerred total.
    *      Will loop through the winners off-chain and call increaseAllowance to them based on the earnings here.
    */
-  function calculateEarnings(address enctr, address player) public {
+  function calculateEarnings(address enctr, address payable player) public {
     if(_enctrs[enctr].actualOutcome == _wagers[player][enctr].outcome)
       _enctrs[enctr].winners.push(player); // For later use in calculating allowance
 
