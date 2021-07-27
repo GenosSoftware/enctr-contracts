@@ -18,7 +18,7 @@ struct Wager {
 struct Enctr {
   address[] players;
   uint256 actualOutcome;
-  uint256 wageredAmountForActualOutcome; // the amount of money wagered towards the actual outcome (used in calculation)
+  mapping(uint256 => uint256) outcomesToWageredAmount; // outcome -> $ wagered for that outcome
 }
 
 contract BattleScape is Initializable, Context {
@@ -53,11 +53,14 @@ contract BattleScape is Initializable, Context {
     _wagers[_msgSender()][enctr] = Wager(outcome, amount, 0);
     // Add this address as a player in the Encoutr
     _enctrs[enctr].players.push(_msgSender());
+    // Add this to wagered amount for particular outcome
+    _enctrs[enctr].outcomesToWageredAmount[outcome] = _enctrs[enctr].outcomesToWageredAmount[outcome].add(amount);
     emit WagerCreated(enctr, outcome, amount);
   }
 
   function cancelWager(address payable enctr) public {
     uint256 amount = _wagers[_msgSender()][enctr].amount;
+    uint256 outcome = _wagers[_msgSender()][enctr].outcome;
     require(amount > 0, "no bet to cancel");
     require(e.allowance(enctr, address(this)) >= amount, "check token allowance");
 
@@ -65,6 +68,10 @@ contract BattleScape is Initializable, Context {
     require(success, "unable to return wager");
 
     _wagers[_msgSender()][enctr] = Wager(0, 0, 0);
+
+    // Subtract the amount from the outcomes
+    _enctrs[enctr].outcomesToWageredAmount[outcome] = _enctrs[enctr].outcomesToWageredAmount[outcome].sub(amount);
+
     emit WagerCancelled(enctr, _msgSender());
   }
 
@@ -74,9 +81,9 @@ contract BattleScape is Initializable, Context {
   function finishEnctr(uint256 actualOutcome, uint256 amount) public {
     require(_enctrs[_msgSender()].actualOutcome == 0, "the outcome has already been set");
     _enctrs[_msgSender()].actualOutcome = actualOutcome;
-    _enctrs[_msgSender()].wageredAmountForActualOutcome = amount; // calculated off-chain
+    _enctrs[_msgSender()].outcomesToWageredAmount[actualOutcome] = amount; // calculated off-chain
 
-    emit EnctrFinished(_msgSender(), actualOutcome, _enctrs[_msgSender()].wageredAmountForActualOutcome);
+    emit EnctrFinished(_msgSender(), actualOutcome, _enctrs[_msgSender()].outcomesToWageredAmount[actualOutcome]);
   }
 
   /**
@@ -85,13 +92,9 @@ contract BattleScape is Initializable, Context {
    */
   function calculateEarnings(address enctr, address payable player) public {
     if(_enctrs[enctr].actualOutcome != _wagers[player][enctr].outcome) {
-      emit TestingOutput(_wagers[player][enctr].outcome, _enctrs[enctr].actualOutcome);
       return;
     } 
-    // else {   DONT THINK WE NEED A WINNERS ARRAY? WASTE OF GAS We can already find all the wagers for free
-    //   _enctrs[enctr].winners.push(player);
-    // }
-    uint256 percent = _wagers[player][enctr].amount.div(_enctrs[enctr].wageredAmountForActualOutcome);
+    uint256 percent = _wagers[player][enctr].amount.div(_enctrs[enctr].outcomesToWageredAmount[_enctrs[enctr].actualOutcome]);
     _wagers[player][enctr].earnings = e.balanceOf(enctr).mul(percent);
 
     emit EarningsCalculated(player, percent, _wagers[player][enctr].earnings);
@@ -116,7 +119,11 @@ contract BattleScape is Initializable, Context {
   }
 
   function getEnctr(address enctr) public view returns (address[] memory, uint256, uint256) {
-    return (_enctrs[enctr].players, _enctrs[enctr].actualOutcome, _enctrs[enctr].wageredAmountForActualOutcome);
+    return (_enctrs[enctr].players, _enctrs[enctr].actualOutcome, _enctrs[enctr].outcomesToWageredAmount[_enctrs[enctr].actualOutcome]);
+  }
+
+  function getEnctrTotalWagerForOutcome(address enctr, uint256 outcome) public view returns (uint256) {
+    return _enctrs[enctr].outcomesToWageredAmount[outcome];
   }
 
   function getWager(address enctr) public view returns (uint256, uint256) {
