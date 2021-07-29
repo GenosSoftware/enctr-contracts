@@ -29,7 +29,7 @@ contract BattleScape is Initializable, Context {
   event WagerCancelled(address indexed enctr, address indexed player);
   event EarningsCollected(address indexed enctr, address indexed player, uint256 earnings);
   event EnctrFinished(address indexed enctr, uint256 indexed actualOutcome, uint256 wageredAmountForActualOutcome);
-  event EarningsCalculated(address indexed player, uint256 percent, uint256 earnings);
+  event EarningsCalculated(address indexed player, uint256 percent, uint256 earnings, uint256 wageredAmount, uint256 wagerTotalForActualOutcome);
   event TestingOutput(uint256 outcome, uint256 actualOutcome);
 
   mapping(address => Enctr) public _enctrs;
@@ -78,10 +78,9 @@ contract BattleScape is Initializable, Context {
   /**
     * @dev Only the owner of the encountr can finish an enctr and it can only be finished once. 
     */
-  function finishEnctr(uint256 actualOutcome, uint256 amount) public {
+  function finishEnctr(uint256 actualOutcome) public {
     require(_enctrs[_msgSender()].actualOutcome == 0, "the outcome has already been set");
     _enctrs[_msgSender()].actualOutcome = actualOutcome;
-    _enctrs[_msgSender()].outcomesToWageredAmount[actualOutcome] = amount; // calculated off-chain
 
     emit EnctrFinished(_msgSender(), actualOutcome, _enctrs[_msgSender()].outcomesToWageredAmount[actualOutcome]);
   }
@@ -93,11 +92,14 @@ contract BattleScape is Initializable, Context {
   function calculateEarnings(address enctr, address payable player) public {
     if(_enctrs[enctr].actualOutcome != _wagers[player][enctr].outcome) {
       return;
-    } 
-    uint256 percent = _wagers[player][enctr].amount.div(_enctrs[enctr].outcomesToWageredAmount[_enctrs[enctr].actualOutcome]);
-    _wagers[player][enctr].earnings = e.balanceOf(enctr).mul(percent);
+    }
+    
+    uint256 _numerator = _wagers[player][enctr].amount * 10**3; // Amount user wagered
+    uint256 _denominator = _enctrs[enctr].outcomesToWageredAmount[_enctrs[enctr].actualOutcome]; // Total Amount Wagered for this Outcome
+    uint256 _percent = (_numerator / _denominator);
+    _wagers[player][enctr].earnings = (e.balanceOf(enctr).mul(_percent) / 10**3);
 
-    emit EarningsCalculated(player, percent, _wagers[player][enctr].earnings);
+    emit EarningsCalculated(player, _percent, _wagers[player][enctr].earnings, _wagers[player][enctr].amount, _enctrs[enctr].outcomesToWageredAmount[_enctrs[enctr].actualOutcome]);
   }
 
   /**
