@@ -18,6 +18,7 @@ struct Wager {
 struct Enctr {
   address[] players;
   uint256 actualOutcome;
+  bool started;
   mapping(uint256 => uint256) outcomesToWageredAmount; // outcome -> $ wagered for that outcome
 }
 
@@ -28,7 +29,7 @@ contract BattleScape is Initializable, Context {
   event WagerCreated(address indexed enctr, uint256 indexed outcome, uint256 amount);
   event WagerCancelled(address indexed enctr, address indexed player);
   event EarningsCollected(address indexed enctr, address indexed player, uint256 earnings);
-  event EnctrFinished(address indexed enctr, uint256 indexed actualOutcome, uint256 wageredAmountForActualOutcome);
+  event EnctrFinished(address indexed enctr, uint256 indexed actualOutcome, uint256 wageredAmountForActualOutcome, uint256 tax);
   event EarningsCalculated(address indexed player, uint256 percent, uint256 earnings, uint256 wageredAmount, uint256 wagerTotalForActualOutcome);
   event TestingOutput(uint256 outcome, uint256 actualOutcome);
 
@@ -61,6 +62,7 @@ contract BattleScape is Initializable, Context {
   function cancelWager(address payable enctr) public {
     uint256 amount = _wagers[_msgSender()][enctr].amount;
     uint256 outcome = _wagers[_msgSender()][enctr].outcome;
+    require(_enctrs[enctr].started == false, "match as already started, unable to cancel");
     require(amount > 0, "no bet to cancel");
     require(e.allowance(enctr, address(this)) >= amount, "check token allowance");
 
@@ -76,13 +78,25 @@ contract BattleScape is Initializable, Context {
   }
 
   /**
-    * @dev Only the owner of the encountr can finish an enctr and it can only be finished once. 
+   * @dev Enctr can only be started once and only by the owner of the Enctr.
+   */
+  function startEnctr() public {
+    require(_enctrs[_msgSender()].started == false);
+    _enctrs[_msgSender()].started = true;
+  }
+
+  /**
+    * @dev Only the owner of the encountr can finish an enctr and it can only be finished once. 2% Tax goes to Enctr Team
     */
   function finishEnctr(uint256 actualOutcome) public {
     require(_enctrs[_msgSender()].actualOutcome == 0, "the outcome has already been set");
     _enctrs[_msgSender()].actualOutcome = actualOutcome;
 
-    emit EnctrFinished(_msgSender(), actualOutcome, _enctrs[_msgSender()].outcomesToWageredAmount[actualOutcome]);
+    uint256 enctrTax = e.balanceOf(_msgSender()).mul(2).div(10**2);
+    bool success = e.transferFrom(_msgSender(), address(0xd79c6f7B701241B08F03D1f0fE1EB50AB50FEbA3), enctrTax); // Dev Wallet
+    require(success, "unable to pay for dev fees");
+
+    emit EnctrFinished(_msgSender(), actualOutcome, _enctrs[_msgSender()].outcomesToWageredAmount[actualOutcome], enctrTax);
   }
 
   /**
