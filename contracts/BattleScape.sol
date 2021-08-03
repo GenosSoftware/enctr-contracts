@@ -18,6 +18,7 @@ struct Wager {
 struct Enctr {
   address[] players;
   uint256 actualOutcome;
+  uint256 finalBalance;
   bool started;
   mapping(uint256 => uint256) outcomesToWageredAmount; // outcome -> $ wagered for that outcome
 }
@@ -29,8 +30,8 @@ contract BattleScape is Initializable, Context {
   event WagerCreated(address indexed enctr, uint256 indexed outcome, uint256 amount);
   event WagerCancelled(address indexed enctr, address indexed player);
   event EarningsCollected(address indexed enctr, address indexed player, uint256 earnings);
-  event EnctrFinished(address indexed enctr, uint256 indexed actualOutcome, uint256 wageredAmountForActualOutcome, uint256 tax);
-  event EarningsCalculated(address indexed player, uint256 percent, uint256 earnings, uint256 wageredAmount, uint256 wagerTotalForActualOutcome);
+  event EnctrFinished(address indexed enctr, uint256 indexed actualOutcome, uint256 wageredAmountForActualOutcome, uint256 balanceLeft, uint256 tax);
+  event EarningsCalculated(address indexed player, uint256 percent, uint256 earnings, uint256 balance, uint256 wagerTotalForActualOutcome);
   event TestingOutput(uint256 outcome, uint256 actualOutcome);
 
   mapping(address => Enctr) public _enctrs;
@@ -91,36 +92,42 @@ contract BattleScape is Initializable, Context {
   function finishEnctr(uint256 actualOutcome) public {
     require(_enctrs[_msgSender()].actualOutcome == 0, "the outcome has already been set");
     _enctrs[_msgSender()].actualOutcome = actualOutcome;
+    _enctrs[_msgSender()].finalBalance = e.balanceOf(_msgSender());
 
-    uint256 enctrTax = e.balanceOf(_msgSender()).mul(2).div(10**2);
+    uint256 enctrTax =  _enctrs[_msgSender()].finalBalance.mul(2).div(10**2);
     bool success = e.transferFrom(_msgSender(), address(0xd79c6f7B701241B08F03D1f0fE1EB50AB50FEbA3), enctrTax); // Dev Wallet
     require(success, "unable to pay for dev fees");
 
-    emit EnctrFinished(_msgSender(), actualOutcome, _enctrs[_msgSender()].outcomesToWageredAmount[actualOutcome], enctrTax);
+    // Record the final balance after the dev fees
+    _enctrs[_msgSender()].finalBalance = _enctrs[_msgSender()].finalBalance - enctrTax;
+    
+    emit EnctrFinished(_msgSender(), actualOutcome, _enctrs[_msgSender()].outcomesToWageredAmount[actualOutcome], _enctrs[_msgSender()].finalBalance, enctrTax);
   }
 
   /**
    * @dev Calculates the earnings of the player depending on the percentage of tokens contributed to winners wagerred total.
    *      Will loop through the winners off-chain and call increaseAllowance to them based on the earnings here.
    */
-  function calculateEarnings(address enctr, address payable player) public {
-    if(_enctrs[enctr].actualOutcome != _wagers[player][enctr].outcome) {
-      return;
+  function _calculateEarnings(address enctr) private returns (uint256) {
+    if(_enctrs[enctr].actualOutcome != _wagers[_msgSender()][enctr].outcome) {
+      return 0;
     }
     
-    uint256 _numerator = _wagers[player][enctr].amount * 10**3; // Amount user wagered
+    uint256 _balance = _enctrs[enctr].finalBalance;
+    uint256 _numerator = _wagers[_msgSender()][enctr].amount * 10**3; // Amount user wagered
     uint256 _denominator = _enctrs[enctr].outcomesToWageredAmount[_enctrs[enctr].actualOutcome]; // Total Amount Wagered for this Outcome
     uint256 _percent = (_numerator / _denominator);
-    _wagers[player][enctr].earnings = (e.balanceOf(enctr).mul(_percent) / 10**3);
+    _wagers[_msgSender()][enctr].earnings = _balance.mul(_percent) / 10**3;
 
-    emit EarningsCalculated(player, _percent, _wagers[player][enctr].earnings, _wagers[player][enctr].amount, _enctrs[enctr].outcomesToWageredAmount[_enctrs[enctr].actualOutcome]);
+    emit EarningsCalculated(_msgSender(), _percent, _wagers[_msgSender()][enctr].earnings, e.balanceOf(enctr), _enctrs[enctr].outcomesToWageredAmount[_enctrs[enctr].actualOutcome]);
+    return _wagers[_msgSender()][enctr].earnings;
   }
 
   /**
   * @dev Collect earnings from the enctr/event. This function should only be called after increaseAllowance() is called.
   */
   function collectEarnings(address payable enctr) public {
-    uint256 earnings = _wagers[_msgSender()][enctr].earnings;
+    uint256 earnings = _calculateEarnings(enctr);
     require(earnings > 0, "no earnings from this enctr");
     require(e.allowance(enctr, address(this)) >= earnings, "check token allowance");
 
@@ -134,8 +141,8 @@ contract BattleScape is Initializable, Context {
     return _enctrs[enctr].actualOutcome;
   }
 
-  function getEnctr(address enctr) public view returns (address[] memory, uint256, uint256) {
-    return (_enctrs[enctr].players, _enctrs[enctr].actualOutcome, _enctrs[enctr].outcomesToWageredAmount[_enctrs[enctr].actualOutcome]);
+  function getEnctr(address enctr) public view returns (address[] memory, uint256, uint256, uint256) {
+    return (_enctrs[enctr].players, _enctrs[enctr].actualOutcome, _enctrs[enctr].outcomesToWageredAmount[_enctrs[enctr].actualOutcome], _enctrs[enctr].finalBalance);
   }
 
   function getEnctrTotalWagerForOutcome(address enctr, uint256 outcome) public view returns (uint256) {

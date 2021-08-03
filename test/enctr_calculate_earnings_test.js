@@ -16,12 +16,12 @@ contract("BattleScape", accounts => {
     const actualOutcome = 1;
     const wagerAmount = 100;
 
-    await ecountrInstance.transfer(playerAddress, 50000, {from: account1});
-
+    // Set tax to 2% for a total of 6%
     await ecountrInstance.setTaxFeePercent(2);
+    await ecountrInstance.transfer(playerAddress, 50000, {from: account1});
     await ecountrInstance.increaseAllowance(battleScapeInstance.address, 100000000000, {from: evt});
     await ecountrInstance.increaseAllowance(battleScapeInstance.address, 100000000000, {from: playerAddress});
-    await battleScapeInstance.wager(evt, outcome, wagerAmount, {from: playerAddress});
+    await battleScapeInstance.wager(evt, outcome, wagerAmount, {from: playerAddress}); // 6% should be taken from here so 94
 
     // Calculate the wagered amount against the addresses with the correct outcome
     let enctr = await battleScapeInstance.getEnctr(evt);
@@ -31,12 +31,6 @@ contract("BattleScape", accounts => {
     let winners = [];
     
     var wag = await battleScapeInstance.getPlayerWagerForEnctr(evt, playerAddress);
-    if(web3.utils.toBN(outcome).eq(wag[0])) {
-      // Add it to the wagActAmt
-      wagActAmt = wagActAmt.add(wag[1]);
-      winners.push(playerAddress);
-    }
-    wag = await battleScapeInstance.getPlayerWagerForEnctr(evt, playerAddress);
 
     // Finish the enctr and now exclude it from the fee
     await ecountrInstance.excludeFromFee(evt);
@@ -44,13 +38,13 @@ contract("BattleScape", accounts => {
     
     // Calculate the earnings for each winner (only 1 for this test)
     enctr = await battleScapeInstance.getEnctr(evt);
-    await battleScapeInstance.calculateEarnings(evt, playerAddress);
-
-    wag = await battleScapeInstance.getPlayerWagerForEnctr(evt, playerAddress);
 
     // Collect the earnings
     await battleScapeInstance.collectEarnings(evt, {from: playerAddress});
 
+    wag = await battleScapeInstance.getPlayerWagerForEnctr(evt, playerAddress);
+
+    console.log("The wager outcome amount: " + wag[2].toNumber());
     // assert(web3.utils.toBN(wagerAmount).eq(wag[2]), "The wagered amt and the earnings should be the same");
     assert(93 == wag[2].toNumber(), "the earnings should be 93 (2% dev tax + 6% fee)"); //rounded down each time
 
@@ -103,10 +97,9 @@ contract("BattleScape", accounts => {
     await battleScapeInstance.finishEnctr(actualOutcome, {from: evt});
     
 
-    // Calculate the earnings for each winner (2 for this test)
-    for (const player of winners) {
-      await battleScapeInstance.calculateEarnings(evt, player);
-    }
+    // Collect the earnings for each winner (2 for this test)
+    await battleScapeInstance.collectEarnings(evt, {from: player1Address});
+    await battleScapeInstance.collectEarnings(evt, {from: player2Address});
 
     wag1 = await battleScapeInstance.getPlayerWagerForEnctr(evt, player1Address);
     wag2 = await battleScapeInstance.getPlayerWagerForEnctr(evt, player2Address);
@@ -162,21 +155,13 @@ contract("BattleScape", accounts => {
       }
     }
 
-
-    var bal = await ecountrInstance.balanceOf(evt);
-    console.log("Balance of ENCTR BEFORE we take tax: " + bal);
-
     // Finish the enctr
     await ecountrInstance.excludeFromFee(evt);
     await battleScapeInstance.finishEnctr(actualOutcome, {from: evt});
-
-    bal = await ecountrInstance.balanceOf(evt);
-    console.log("Balance of ENCTR after we take dev tax: " + bal);
     
-    // Calculate the earnings for each winner (3 for this test)
-    for (const player of winners) {
-      await battleScapeInstance.calculateEarnings(evt, player);
-    }
+    // Collect the earnings for each winner (2 for this test)
+    await battleScapeInstance.collectEarnings(evt, {from: player1Address});
+    await battleScapeInstance.collectEarnings(evt, {from: player2Address});
 
     wag1 = await battleScapeInstance.getPlayerWagerForEnctr(evt, player1Address);
     wag2 = await battleScapeInstance.getPlayerWagerForEnctr(evt, player2Address);
