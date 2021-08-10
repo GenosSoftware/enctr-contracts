@@ -100,7 +100,7 @@ contract BattleScape is Initializable, Context {
 
     // Record the final balance after the dev fees
     _enctrs[_msgSender()].finalBalance = _enctrs[_msgSender()].finalBalance - enctrTax;
-    
+
     emit EnctrFinished(_msgSender(), actualOutcome, _enctrs[_msgSender()].outcomesToWageredAmount[actualOutcome], _enctrs[_msgSender()].finalBalance, enctrTax);
   }
 
@@ -112,7 +112,7 @@ contract BattleScape is Initializable, Context {
     if(_enctrs[enctr].actualOutcome != _wagers[_msgSender()][enctr].outcome) {
       return 0;
     }
-    
+
     uint256 _balance = _enctrs[enctr].finalBalance;
     uint256 _numerator = _wagers[_msgSender()][enctr].amount * 10**3; // Amount user wagered
     uint256 _denominator = _enctrs[enctr].outcomesToWageredAmount[_enctrs[enctr].actualOutcome]; // Total Amount Wagered for this Outcome
@@ -141,8 +141,8 @@ contract BattleScape is Initializable, Context {
     return _enctrs[enctr].actualOutcome;
   }
 
-  function getEnctr(address enctr) public view returns (address[] memory, uint256, uint256, uint256) {
-    return (_enctrs[enctr].players, _enctrs[enctr].actualOutcome, _enctrs[enctr].outcomesToWageredAmount[_enctrs[enctr].actualOutcome], _enctrs[enctr].finalBalance);
+  function getEnctr(address enctr) public view returns (address[] memory, uint256, uint256, uint256, bool) {
+    return (_enctrs[enctr].players, _enctrs[enctr].actualOutcome, _enctrs[enctr].outcomesToWageredAmount[_enctrs[enctr].actualOutcome], _enctrs[enctr].finalBalance, _enctrs[enctr].started);
   }
 
   function getEnctrTotalWagerForOutcome(address enctr, uint256 outcome) public view returns (uint256) {
