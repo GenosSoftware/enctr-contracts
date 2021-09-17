@@ -1,28 +1,32 @@
 const path = require("path");
+const HDWalletProvider = require('@truffle/hdwallet-provider');
+const mnemonic = fs.readFileSync(".secret.testnet").toString().trim();
 
 module.exports = {
-  // See <http://truffleframework.com/docs/advanced/configuration>
-  // to customize your Truffle configuration!
   contracts_build_directory: path.join(__dirname, "app/src/contracts"),
   networks: {
-    develop: { // default with truffle unbox is 7545, but we can use develop to test changes, ex. truffle migrate --network develop
+    develop: {
       host: "127.0.0.1",
       port: 8545,
       network_id: "*"
-    }
+    },
+    testnet: {
+      provider: () => new HDWalletProvider(mnemonic, `https://data-seed-prebsc-1-s1.binance.org:8545`),
+      network_id: 97,
+      confirmations: 10,
+      timeoutBlocks: 200,
+      skipDryRun: true
+    },
   },
   compilers: {
     solc: {
-      version: "^0.6.12",    // Fetch exact version from solc-bin (default: truffle's version)
-      // docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
-      settings: {          // See the solidity docs for advice about optimization and evmVersion
+      version: "^0.6.12",
+      settings: {
        optimizer: {
          enabled: true,
          runs: 200
         }
        },
-      //  evmVersion: "byzantium"
-      // }
     }
   }
 };
