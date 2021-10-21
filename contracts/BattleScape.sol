@@ -24,11 +24,11 @@ struct Enctr {
 }
 
 contract BattleScape is Initializable, ContextUpgradeable {
-  event WagerCreated(address indexed enctr, uint256 indexed outcome, uint256 amount);
+  event WagerCreated(address indexed enctr, address indexed player, uint256 indexed outcome, uint256 amount);
   event WagerCancelled(address indexed enctr, address indexed player);
   event EarningsCollected(address indexed enctr, address indexed player, uint256 earnings);
   event EnctrFinished(address indexed enctr, uint256 indexed actualOutcome, uint256 wageredAmountForActualOutcome, uint256 balanceLeft, uint256 tax);
-  event EarningsCalculated(address indexed player, uint256 percent, uint256 earnings, uint256 balance, uint256 wagerTotalForActualOutcome);
+  event EarningsCalculated(address indexed enctr, address indexed player, uint256 percent, uint256 earnings, uint256 balance, uint256 wagerTotalForActualOutcome);
   event TestingOutput(uint256 outcome, uint256 actualOutcome);
 
   mapping(address => Enctr) public _enctrs;
@@ -55,7 +55,7 @@ contract BattleScape is Initializable, ContextUpgradeable {
     _enctrs[enctr].players.push(_msgSender());
     // Add this to wagered amount for particular outcome
     _enctrs[enctr].outcomesToWageredAmount[outcome] = _enctrs[enctr].outcomesToWageredAmount[outcome] + amount;
-    emit WagerCreated(enctr, outcome, amount);
+    emit WagerCreated(enctr, _msgSender(), outcome, amount);
   }
 
   function cancelWager(address payable enctr) external {
@@ -117,7 +117,7 @@ contract BattleScape is Initializable, ContextUpgradeable {
     uint256 _percent = (_numerator / _denominator);
     _wagers[_msgSender()][enctr].earnings = _balance * _percent / 10**3;
 
-    emit EarningsCalculated(_msgSender(), _percent, _wagers[_msgSender()][enctr].earnings, e.balanceOf(enctr), _enctrs[enctr].outcomesToWageredAmount[_enctrs[enctr].actualOutcome]);
+    emit EarningsCalculated(enctr, _msgSender(), _percent, _wagers[_msgSender()][enctr].earnings, e.balanceOf(enctr), _enctrs[enctr].outcomesToWageredAmount[_enctrs[enctr].actualOutcome]);
     return _wagers[_msgSender()][enctr].earnings;
   }
 
