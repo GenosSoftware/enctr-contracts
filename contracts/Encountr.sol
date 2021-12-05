@@ -17,12 +17,29 @@ contract Encountr is Initializable, ERC20Upgradeable, OwnableUpgradeable {
     address private _swapRouterAddress;
     bool private _tradingOpen;
 
+    uint256 public autoLiquidityPercentage;
+    bool private _inAutoLiquidity;
+    bool public autoLiquidityEnabled;
+
     uint256 public taxFee;
     address public taxCollector;
     mapping (address => bool) private _isExcludedFromTax;
 
     IUniswapV2Router02 public uniswapV2Router;
     address public uniswapV2Pair;
+
+    event AutoLiquidityEnabledUpdated(bool enabled);
+    event AutoLiquidityGenerated(
+        uint256 tokensSwapped,
+        uint256 ethReceived,
+        uint256 tokensIntoLiquidity
+    );
+
+    modifier autoLiquidityLock {
+        _inAutoLiquidity = true;
+        _;
+        _inAutoLiquidity = false;
+    }
 
     function initialize(
         uint256 initialSupply,
@@ -35,7 +52,10 @@ contract Encountr is Initializable, ERC20Upgradeable, OwnableUpgradeable {
 
         _swapRouterAddress = swapRouterAddress;
 
-        taxFee = 1;
+        autoLiquidityEnabled = true;
+        autoLiquidityPercentage = 8;
+
+        taxFee = 3;
         taxCollector = address(this);
         _isExcludedFromTax[taxCollector] = true;
         _isExcludedFromTax[owner()] = true;
@@ -57,6 +77,69 @@ contract Encountr is Initializable, ERC20Upgradeable, OwnableUpgradeable {
         IERC20(uniswapV2Pair).approve(address(uniswapV2Router), type(uint).max);
     }
 
+    function setAutoLiquidityEnabled(bool _enabled) public onlyOwner {
+        autoLiquidityEnabled = _enabled;
+        emit AutoLiquidityEnabledUpdated(_enabled);
+    }
+
+    function handleLiquidity(address from, uint256 amount) private returns (uint256) {
+        if (!_inAutoLiquidity && from != uniswapV2Pair && autoLiquidityEnabled) {
+            require(super.transferFrom(from, address(this), amount), "auto-liquidity transferFrom failed");
+            autoLiquify(amount);
+            return 0;
+        }
+
+        return amount;
+    }
+
+    function autoLiquify(uint256 amount) private autoLiquidityLock {
+        uint256 half = amount / 2;
+        uint256 otherHalf = amount - half;
+
+        // capture the contract's current ETH balance.
+        // this is so that we can capture exactly the amount of ETH that the
+        // swap creates, and not make the liquidity event include any ETH that
+        // has been manually sent to the contract
+        uint256 initialBalance = address(this).balance;
+
+        swapTokensForEth(half);
+
+        uint256 newBalance = address(this).balance - initialBalance;
+
+        addLiquidity(otherHalf, newBalance);
+
+        emit AutoLiquidityGenerated(half, newBalance, otherHalf);
+    }
+
+    function swapTokensForEth(uint256 tokenAmount) private {
+        address[] memory path = new address[](2);
+        path[0] = address(this);
+        path[1] = uniswapV2Router.WETH();
+
+        _approve(address(this), address(uniswapV2Router), tokenAmount);
+
+        uniswapV2Router.swapExactTokensForETHSupportingFeeOnTransferTokens(
+            tokenAmount,
+            0, // accept any amount of ETH
+            path,
+            address(this),
+            block.timestamp
+        );
+    }
+
+    function addLiquidity(uint256 tokenAmount, uint256 ethAmount) private {
+        _approve(address(this), address(uniswapV2Router), tokenAmount);
+
+        uniswapV2Router.addLiquidityETH{value: ethAmount}(
+            address(this),
+            tokenAmount,
+            0, // slippage is unavoidable
+            0, // slippage is unavoidable
+            owner(),
+            block.timestamp
+        );
+    }
+
     function transfer(address recipient, uint256 amount) public override returns (bool) {
       if (_isExcludedFromTax[recipient] || _isExcludedFromTax[_msgSender()]) {
         require(super.transfer(recipient, amount), "untaxed transfer failed");
@@ -64,8 +147,12 @@ contract Encountr is Initializable, ERC20Upgradeable, OwnableUpgradeable {
       }
 
       uint256 tax;
+      uint256 autoLiquidity;
       uint256 remainder;
-      (tax, remainder) = _calculateTax(amount);
+      (tax, autoLiquidity, remainder) = _calculateTax(amount);
+
+      uint256 unhandledAmount = handleLiquidity(_msgSender(), autoLiquidity);
+      remainder = remainder + unhandledAmount; // We may fail to add liquidity because of a lock.
 
       require(super.transfer(taxCollector, tax), "tax transfer failed");
       require(super.transfer(recipient, remainder), "post-tax transfer failed");
@@ -80,8 +167,12 @@ contract Encountr is Initializable, ERC20Upgradeable, OwnableUpgradeable {
       }
 
       uint256 tax;
+      uint256 autoLiquidity;
       uint256 remainder;
-      (tax, remainder) = _calculateTax(amount);
+      (tax, autoLiquidity, remainder) = _calculateTax(amount);
+
+      uint256 unhandledAmount = handleLiquidity(_msgSender(), autoLiquidity);
+      remainder = remainder + unhandledAmount; // We may fail to add liquidity because of a lock.
 
       require(super.transferFrom(sender, taxCollector, tax), "tax transferFrom failed");
       require(super.transferFrom(sender, recipient, remainder), "post-tax transferFrom failed");
@@ -89,10 +180,11 @@ contract Encountr is Initializable, ERC20Upgradeable, OwnableUpgradeable {
       return true;
     }
 
-    function _calculateTax(uint256 amount) private view returns (uint256, uint256) {
+    function _calculateTax(uint256 amount) private view returns (uint256, uint256, uint256) {
       uint256 tax = (amount * taxFee) / 10**2;
-      uint256 remainder = amount - tax;
-      return (tax, remainder);
+      uint256 autoLiquidity = (amount * autoLiquidityPercentage) / 10**2;
+      uint256 remainder = amount - tax - autoLiquidity;
+      return (tax, autoLiquidity, remainder);
     }
 
     function excludeFromTax(address account) external onlyOwner {
