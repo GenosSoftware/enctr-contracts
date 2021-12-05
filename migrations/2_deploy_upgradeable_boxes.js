@@ -11,7 +11,7 @@ module.exports = async function (deployer, network) {
     swapAddress = '0xD99D1c33F9fC3444f8101754aBC46c52416550D1';
   }
 
-  let maxSupply = 1e11;
+  let maxSupply = 1e9;
   const eInstance = await deployProxy(
     EncountrToken,
     [

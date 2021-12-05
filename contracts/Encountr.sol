@@ -40,7 +40,7 @@ contract Encountr is Initializable, ERC20Upgradeable, OwnableUpgradeable {
         _isExcludedFromTax[taxCollector] = true;
         _isExcludedFromTax[owner()] = true;
 
-        _mint(owner(), initialSupply);
+        _mint(owner(), initialSupply * (10 ** uint256(decimals())));
     }
 
     function openTrading() external onlyOwner {
