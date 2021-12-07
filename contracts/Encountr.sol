@@ -171,7 +171,7 @@ contract Encountr is Initializable, ERC20Upgradeable, OwnableUpgradeable {
       uint256 remainder;
       (tax, autoLiquidity, remainder) = _calculateTax(amount);
 
-      uint256 unhandledAmount = handleLiquidity(_msgSender(), autoLiquidity);
+      uint256 unhandledAmount = handleLiquidity(sender, autoLiquidity);
       remainder = remainder + unhandledAmount; // We may fail to add liquidity because of a lock.
 
       require(super.transferFrom(sender, taxCollector, tax), "tax transferFrom failed");

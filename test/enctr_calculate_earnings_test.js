@@ -5,7 +5,7 @@ const EncountrToken = artifacts.require("Encountr");
 
 contract("BattleScape", accounts => {
 
-  it("... should calculate proper earnings for a 1 player Enctr and collect earnings with 8% tax", async () => {
+  it("... should calculate proper earnings for a 1 player Enctr and collect earnings with 2% tax", async () => {
     const battleScapeInstance = await BattleScape.deployed();
     const ecountrInstance = await EncountrToken.deployed();
 
@@ -16,15 +16,14 @@ contract("BattleScape", accounts => {
     const actualOutcome = 1;
     const wagerAmount = 100;
 
-    await ecountrInstance.setTaxPercentage(2);
+    await ecountrInstance.excludeFromTax(evt);
     await ecountrInstance.transfer(playerAddress, 50000, {from: account1});
     await ecountrInstance.increaseAllowance(battleScapeInstance.address, 100000000000, {from: evt});
     await ecountrInstance.increaseAllowance(battleScapeInstance.address, 100000000000, {from: playerAddress});
     await battleScapeInstance.wager(evt, outcome, wagerAmount, {from: playerAddress}); // 2% (2) should be taken from here so 98 is placed in escrow
 
-    // Finish the enctr and now exclude it from the fee
-    await ecountrInstance.excludeFromTax(evt);
-    await battleScapeInstance.finishEnctr(actualOutcome, {from: evt}); // Another 2% (1.96 rounded down to 1) is moved to the dev wallet here leaving 97
+    // Finish the enctr
+    await battleScapeInstance.finishEnctr(actualOutcome, {from: evt});
 
     // Calculate the earnings for each winner (only 1 for this test)
     let enctr = await battleScapeInstance.getEnctr(evt);
@@ -33,7 +32,7 @@ contract("BattleScape", accounts => {
     await battleScapeInstance.collectEarnings(evt, {from: playerAddress});
 
     let wag = await battleScapeInstance.getPlayerWagerForEnctr(evt, playerAddress);
-    let expectedEarnings = 97;
+    let expectedEarnings = 98;
 
     console.log("The wager outcome amount: " + wag[2].toNumber());
     assert(expectedEarnings == wag[2].toNumber(), `the earnings should be ${expectedEarnings}`);
