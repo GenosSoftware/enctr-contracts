@@ -15,7 +15,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 contract Encountr is Initializable, ERC20Upgradeable, OwnableUpgradeable {
     address private _swapRouterAddress;
-    bool private _tradingOpen;
 
     uint256 public autoLiquidityPercentage;
     bool private _inAutoLiquidity;
@@ -61,20 +60,11 @@ contract Encountr is Initializable, ERC20Upgradeable, OwnableUpgradeable {
         _isExcludedFromTax[owner()] = true;
 
         _mint(owner(), initialSupply * (10 ** uint256(decimals())));
-    }
 
-    function openTrading() external onlyOwner {
-        require(!_tradingOpen, "trading is already open");
         IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(_swapRouterAddress);
         uniswapV2Router = _uniswapV2Router;
 
-        _approve(address(this), address(uniswapV2Router), totalSupply());
-
         uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory()).createPair(address(this), _uniswapV2Router.WETH());
-        uniswapV2Router.addLiquidityETH{value: address(this).balance}(address(this), balanceOf(address(this)), 0, 0, owner(), block.timestamp);
-
-       _tradingOpen = true;
-        IERC20(uniswapV2Pair).approve(address(uniswapV2Router), type(uint).max);
     }
 
     function setAutoLiquidityEnabled(bool _enabled) public onlyOwner {
