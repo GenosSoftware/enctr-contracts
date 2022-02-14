@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
-import './Encountr.sol';
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 struct Wager {
   uint256 outcome;
@@ -19,6 +19,7 @@ struct Enctr {
   address[] players;
   uint256 actualOutcome;
   uint256 finalBalance;
+  uint256 finalBalanceNetFee;
   bool started;
   mapping(uint256 => uint256) outcomesToWageredAmount; // outcome -> $ wagered for that outcome
 }
@@ -27,34 +28,38 @@ contract BattleScape is Initializable, ContextUpgradeable {
   event WagerCreated(address indexed enctr, address indexed player, uint256 indexed outcome, uint256 amount);
   event WagerCancelled(address indexed enctr, address indexed player);
   event EarningsCollected(address indexed enctr, address indexed player, uint256 earnings);
-  event EnctrFinished(address indexed enctr, uint256 indexed actualOutcome, uint256 wageredAmountForActualOutcome, uint256 balanceLeft, uint256 tax);
+  event EnctrFinished(address indexed enctr, uint256 indexed actualOutcome, uint256 wageredAmountForActualOutcome, uint256 balanceLeft, uint256 fee);
   event EarningsCalculated(address indexed enctr, address indexed player, uint256 percent, uint256 earnings, uint256 balance, uint256 wagerTotalForActualOutcome);
   event TestingOutput(uint256 outcome, uint256 actualOutcome);
 
   mapping(address => Enctr) public _enctrs;
   mapping(address => mapping(address => Wager)) public _wagers;
-  Encountr e;
+  IERC20 private _exchangeToken;
+  address payable private _transactionWallet;
 
-  function initialize(Encountr encountr) public initializer {
+  function initialize(IERC20 exchangeToken, address payable transactionWallet) public initializer {
     ContextUpgradeable.__Context_init();
-    e = encountr;
+    _exchangeToken = exchangeToken;
+    _transactionWallet = transactionWallet;
   }
 
   function wager(address payable enctr, uint256 outcome, uint256 amount) external {
-    require(amount > 0, "you need to wager at least some tokens");
-    require(_wagers[_msgSender()][enctr].amount == 0, "a wager has already been placed for this event");
+    require(amount > 0, "wager at least one (1) token");
+    require(_wagers[_msgSender()][enctr].amount == 0, "wager has already been made");
 
-    uint256 allowance = e.allowance(_msgSender(), address(this));
+    uint256 allowance = _exchangeToken.allowance(_msgSender(), address(this));
     require(allowance >= amount, "check the token allowance");
 
-    bool success = e.transferFrom(_msgSender(), enctr, amount);
+    bool success = _exchangeToken.transferFrom(_msgSender(), enctr, amount);
     require(success, "unable to pay for wager");
 
     _wagers[_msgSender()][enctr] = Wager(outcome, amount, 0);
-    // Add this address as a player in the Encoutr
+    // Register the sender (better) as participating in the event.
     _enctrs[enctr].players.push(_msgSender());
-    // Add this to wagered amount for particular outcome
+    // Update the total amount wagered for the selected outcome in the event.
     _enctrs[enctr].outcomesToWageredAmount[outcome] = _enctrs[enctr].outcomesToWageredAmount[outcome] + amount;
+    // Update the total amount wagered for the event.
+    _enctrs[enctr].finalBalance = _enctrs[enctr].finalBalance + amount;
     emit WagerCreated(enctr, _msgSender(), outcome, amount);
   }
 
@@ -63,15 +68,17 @@ contract BattleScape is Initializable, ContextUpgradeable {
     uint256 outcome = _wagers[_msgSender()][enctr].outcome;
     require(_enctrs[enctr].started == false, "match as already started, unable to cancel");
     require(amount > 0, "no bet to cancel");
-    require(e.allowance(enctr, address(this)) >= amount, "check token allowance");
+    require(_exchangeToken.allowance(enctr, address(this)) >= amount, "check token allowance");
 
-    bool success = e.transferFrom(enctr, _msgSender(), amount);
+    bool success = _exchangeToken.transferFrom(enctr, _msgSender(), amount);
     require(success, "unable to return wager");
 
     _wagers[_msgSender()][enctr] = Wager(0, 0, 0);
 
-    // Subtract the amount from the outcomes
+    // Update the total amount wagered for the selected outcome in the event.
     _enctrs[enctr].outcomesToWageredAmount[outcome] = _enctrs[enctr].outcomesToWageredAmount[outcome] - amount;
+    // Update the total amount wagered for the event.
+    _enctrs[enctr].finalBalance = _enctrs[enctr].finalBalance - amount;
 
     emit WagerCancelled(enctr, _msgSender());
   }
@@ -85,21 +92,19 @@ contract BattleScape is Initializable, ContextUpgradeable {
   }
 
   /**
-    * @dev Only the owner of the encountr can finish an enctr and it can only be finished once. 2% Tax goes to Enctr Team
+    * @dev Only the owner of the encountr can finish an enctr and it can only be finished once. 2% fee goes to Enctr Team
     */
   function finishEnctr(uint256 actualOutcome) external {
     require(_enctrs[_msgSender()].actualOutcome == 0, "the outcome has already been set");
     _enctrs[_msgSender()].actualOutcome = actualOutcome;
-    _enctrs[_msgSender()].finalBalance = e.balanceOf(_msgSender());
+    _enctrs[_msgSender()].finalBalance = _exchangeToken.balanceOf(_msgSender());
 
-    uint256 enctrTax =  _enctrs[_msgSender()].finalBalance * 2 / (10**2);
-    bool success = e.transferFrom(_msgSender(), address(0xd79c6f7B701241B08F03D1f0fE1EB50AB50FEbA3), enctrTax); // Dev Wallet
-    require(success, "unable to pay for dev fees");
+    uint256 transactionFee = _enctrs[_msgSender()].finalBalance * 2 / (10**2);
+    bool success = _exchangeToken.transferFrom(_msgSender(), _transactionWallet, transactionFee);
+    require(success, "unable to pay transaction fee");
+    _enctrs[_msgSender()].finalBalanceNetFee = _exchangeToken.balanceOf(_msgSender());
 
-    // Record the final balance after the dev fees
-    _enctrs[_msgSender()].finalBalance = _enctrs[_msgSender()].finalBalance - enctrTax;
-
-    emit EnctrFinished(_msgSender(), actualOutcome, _enctrs[_msgSender()].outcomesToWageredAmount[actualOutcome], _enctrs[_msgSender()].finalBalance, enctrTax);
+    emit EnctrFinished(_msgSender(), actualOutcome, _enctrs[_msgSender()].outcomesToWageredAmount[actualOutcome], _enctrs[_msgSender()].finalBalance, transactionFee);
   }
 
   /**
@@ -111,13 +116,13 @@ contract BattleScape is Initializable, ContextUpgradeable {
       return 0;
     }
 
-    uint256 _balance = _enctrs[enctr].finalBalance;
-    uint256 _numerator = _wagers[_msgSender()][enctr].amount * 10**3; // Amount user wagered
+    uint256 _balance = _enctrs[enctr].finalBalanceNetFee;
+    uint256 _numerator = _wagers[_msgSender()][enctr].amount * 10**10; // Amount user wagered
     uint256 _denominator = _enctrs[enctr].outcomesToWageredAmount[_enctrs[enctr].actualOutcome]; // Total Amount Wagered for this Outcome
     uint256 _percent = (_numerator / _denominator);
-    _wagers[_msgSender()][enctr].earnings = _balance * _percent / 10**3;
+    _wagers[_msgSender()][enctr].earnings = _balance * _percent / 10**10;
 
-    emit EarningsCalculated(enctr, _msgSender(), _percent, _wagers[_msgSender()][enctr].earnings, e.balanceOf(enctr), _enctrs[enctr].outcomesToWageredAmount[_enctrs[enctr].actualOutcome]);
+    emit EarningsCalculated(enctr, _msgSender(), _percent, _wagers[_msgSender()][enctr].earnings, _exchangeToken.balanceOf(enctr), _enctrs[enctr].outcomesToWageredAmount[_enctrs[enctr].actualOutcome]);
     return _wagers[_msgSender()][enctr].earnings;
   }
 
@@ -125,11 +130,12 @@ contract BattleScape is Initializable, ContextUpgradeable {
     * @dev Collect earnings from the enctr/event. This function should only be called after increaseAllowance() is called.
     */
   function collectEarnings(address payable enctr) external {
+    // TODO: confirm it isn't possible call this before it's over
     uint256 earnings = _calculateEarnings(enctr);
     require(earnings > 0, "no earnings from this enctr");
-    require(e.allowance(enctr, address(this)) >= earnings, "check token allowance");
+    require(_exchangeToken.allowance(enctr, address(this)) >= earnings, "check token allowance");
 
-    bool success = e.transferFrom(enctr, _msgSender(), earnings);
+    bool success = _exchangeToken.transferFrom(enctr, _msgSender(), earnings);
     require(success, "unable to collect earnings");
 
     emit EarningsCollected(enctr, _msgSender(), earnings);
