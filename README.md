@@ -1,142 +1,46 @@
+# Advanced Sample Hardhat Project
 
+This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem.
 
-<!-- PROJECT LOGO -->
-<br />
-<p align="center">
-  <a href="https://github.com/LukaASoban/encountr">
-    <img src="logo.jpg" alt="Logo" width="80" height="80">
-  </a>
+The project comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts. It also comes with a variety of other tools, preconfigured to work with the project code.
 
-  <h3 align="center">Encountr</h3>
-</p>
+Try running some of the following tasks:
 
+```shell
+npx hardhat accounts
+npx hardhat compile
+npx hardhat clean
+npx hardhat test
+npx hardhat node
+npx hardhat help
+REPORT_GAS=true npx hardhat test
+npx hardhat coverage
+npx hardhat run scripts/deploy.ts
+TS_NODE_FILES=true npx ts-node scripts/deploy.ts
+npx eslint '**/*.{js,ts}'
+npx eslint '**/*.{js,ts}' --fix
+npx prettier '**/*.{json,sol,md}' --check
+npx prettier '**/*.{json,sol,md}' --write
+npx solhint 'contracts/**/*.sol'
+npx solhint 'contracts/**/*.sol' --fix
+```
 
+# Etherscan verification
 
-<!-- TABLE OF CONTENTS -->
-<details open="open">
-  <summary>Table of Contents</summary>
-  <ol>
-    <li>
-      <a href="#about-the-project">About The Project</a>
-      <ul>
-        <li><a href="#built-with">Built With</a></li>
-      </ul>
-    </li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
-      </ul>
-    </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
-  </ol>
-</details>
+To try out Etherscan verification, you first need to deploy a contract to an Ethereum network that's supported by Etherscan, such as Ropsten.
 
+In this project, copy the .env.example file to a file named .env, and then edit it to fill in the details. Enter your Etherscan API key, your Ropsten node URL (eg from Alchemy), and the private key of the account which will send the deployment transaction. With a valid .env file in place, first deploy your contract:
 
+```shell
+hardhat run --network ropsten scripts/sample-script.ts
+```
 
-<!-- ABOUT THE PROJECT -->
-## About The Project
+Then, copy the deployment address and paste it in to replace `DEPLOYED_CONTRACT_ADDRESS` in this command:
 
-Encountr - the first ever dEsports platform running on Binance Smart Chain and Ethereum.
+```shell
+npx hardhat verify --network ropsten DEPLOYED_CONTRACT_ADDRESS "Hello, Hardhat!"
+```
 
-[Whitepaper](https://github.com/LukaASoban/encountr/blob/main/EncountrWhitepaperV2.pdf)
+# Performance optimizations
 
-
-### Built With
-
-Frameworks/Tools
-* [Node](https://nodejs.org/en/)
-* [Truffle](https://www.trufflesuite.com/)
-
-
-
-<!-- GETTING STARTED -->
-## Getting Started
-
-To get a local copy up and running follow these steps.
-
-### Prerequisites
-
-You will first need the latest version of node and npm.
-* node
-  ```sh
-  sudo apt install nodejs
-  ```
-* npm
-  ```sh
-  sudo apt install npm
-  ```
-* truffle
-  ```sh
-  npm install -g truffle
-  ```
-* ganache-cli
-  ```sh
-  npm install -g ganache-cli
-  ```  
-  
-### Installation
-
-1. Clone the repo
-   ```sh
-   git clone https://github.com/LukaASoban/encountr.git
-   ```
-2. Install NPM packages
-   ```sh
-   npm install
-   ```
-
-<!-- USAGE EXAMPLES -->
-## Usage
-
-Once you have this all set up you will have to use the ganache-cli to fork the Binance Smart Chain network.
-
-Open up a new terminal and execute:
-  ```sh
-  ganache-cli -f https://bsc-dataseed.binance.org -m MNEMONIC-BIP39-STYLE ## -f is fork and -m is the mnemonic for your HD wallet (only use for development)
-  ```
-
-Then, open up another terminal window and run:
-
-  ```sh
-  truffle migrate --network develop ## this is to take the contract in the contracts folder, compile and deploy to ganache
-  ```
-  
-Once, you have this, the contract can be interacted with using truffle console.
-
-  ```sh
-  truffle console --network develop ## interacting with the deployed contract on ganache-cli
-  ```
-  
-Now, you can start interacting with the contract. Check out [Interacting with the Contract](https://www.trufflesuite.com/docs/truffle/getting-started/interacting-with-your-contracts)
-  ```sh
-  let instance = await Encountr.deployed()
-  instance.getBalance(accounts[0])
-  ```
-Check the [Encountr.sol](contracts/Encountr.sol) file for the other functions that can be called.
-
-
-<!-- ROADMAP -->
-## Roadmap
-
-See the [open issues](https://github.com/LukaASoban/encountr/issues) for a list of proposed features (and known issues).
-
-
-
-<!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/othneildrew/Best-README-Template.svg?style=for-the-badge
-[contributors-url]: https://github.com/othneildrew/Best-README-Template/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/othneildrew/Best-README-Template.svg?style=for-the-badge
-[forks-url]: https://github.com/othneildrew/Best-README-Template/network/members
-[stars-shield]: https://img.shields.io/github/stars/othneildrew/Best-README-Template.svg?style=for-the-badge
-[stars-url]: https://github.com/othneildrew/Best-README-Template/stargazers
-[issues-shield]: https://img.shields.io/github/issues/othneildrew/Best-README-Template.svg?style=for-the-badge
-[issues-url]: https://github.com/othneildrew/Best-README-Template/issues
-[license-shield]: https://img.shields.io/github/license/othneildrew/Best-README-Template.svg?style=for-the-badge
-[license-url]: https://github.com/othneildrew/Best-README-Template/blob/master/LICENSE.txt
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/othneildrew
-[product-screenshot]: images/screenshot.png
+For faster runs of your tests and scripts, consider skipping ts-node's type checking by setting the environment variable `TS_NODE_TRANSPILE_ONLY` to `1` in hardhat's environment. For more details see [the documentation](https://hardhat.org/guides/typescript.html#performance-optimizations).
