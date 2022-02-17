@@ -46,6 +46,7 @@ contract BattleScape is Initializable, ContextUpgradeable {
   function wager(address payable enctr, uint256 outcome, uint256 amount) external {
     require(amount > 0, "wager at least one (1) token");
     require(_wagers[_msgSender()][enctr].amount == 0, "wager has already been made");
+    require(_enctrs[enctr].started == false, "match has already started");
 
     uint256 allowance = _exchangeToken.allowance(_msgSender(), address(this));
     require(allowance >= amount, "check the token allowance");
@@ -66,7 +67,7 @@ contract BattleScape is Initializable, ContextUpgradeable {
   function cancelWager(address payable enctr) external {
     uint256 amount = _wagers[_msgSender()][enctr].amount;
     uint256 outcome = _wagers[_msgSender()][enctr].outcome;
-    require(_enctrs[enctr].started == false, "match as already started, unable to cancel");
+    require(_enctrs[enctr].started == false, "match has already started");
     require(amount > 0, "no bet to cancel");
     require(_exchangeToken.allowance(enctr, address(this)) >= amount, "check token allowance");
 
@@ -87,7 +88,7 @@ contract BattleScape is Initializable, ContextUpgradeable {
     * @dev Enctr can only be started once and only by the owner of the Enctr.
     */
   function startEnctr() external {
-    require(_enctrs[_msgSender()].started == false);
+    require(_enctrs[_msgSender()].started == false, "match has already started");
     _enctrs[_msgSender()].started = true;
   }
 
