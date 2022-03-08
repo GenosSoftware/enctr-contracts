@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.7.5;
 
-import "../interfaces/IOlympusAuthority.sol";
+import "../interfaces/IEncountrAuthority.sol";
 
-abstract contract OlympusAccessControlled {
+abstract contract EncountrAccessControlled {
     /* ========== EVENTS ========== */
 
-    event AuthorityUpdated(IOlympusAuthority indexed authority);
+    event AuthorityUpdated(IEncountrAuthority indexed authority);
 
     string UNAUTHORIZED = "UNAUTHORIZED"; // save gas
 
     /* ========== STATE VARIABLES ========== */
 
-    IOlympusAuthority public authority;
+    IEncountrAuthority public authority;
 
     /* ========== Constructor ========== */
 
-    constructor(IOlympusAuthority _authority) {
+    constructor(IEncountrAuthority _authority) {
         authority = _authority;
         emit AuthorityUpdated(_authority);
     }
@@ -45,7 +45,7 @@ abstract contract OlympusAccessControlled {
 
     /* ========== GOV ONLY ========== */
 
-    function setAuthority(IOlympusAuthority _newAuthority) external onlyGovernor {
+    function setAuthority(IEncountrAuthority _newAuthority) external onlyGovernor {
         authority = _newAuthority;
         emit AuthorityUpdated(_newAuthority);
     }

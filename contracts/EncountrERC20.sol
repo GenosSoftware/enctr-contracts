@@ -4,19 +4,19 @@ pragma solidity ^0.7.5;
 import "./libraries/SafeMath.sol";
 
 import "./interfaces/IERC20.sol";
-import "./interfaces/IOHM.sol";
+import "./interfaces/IENCTR.sol";
 import "./interfaces/IERC20Permit.sol";
 
 import "./types/ERC20Permit.sol";
-import "./types/OlympusAccessControlled.sol";
+import "./types/EncountrAccessControlled.sol";
 
-contract OlympusERC20Token is ERC20Permit, IOHM, OlympusAccessControlled {
+contract EncountrERC20Token is ERC20Permit, IENCTR, EncountrAccessControlled {
     using SafeMath for uint256;
 
     constructor(address _authority)
-        ERC20("Olympus", "OHM", 9)
-        ERC20Permit("Olympus")
-        OlympusAccessControlled(IOlympusAuthority(_authority))
+        ERC20("Encountr", "ENCTR", 9)
+        ERC20Permit("Encountr")
+        EncountrAccessControlled(IEncountrAuthority(_authority))
     {}
 
     function mint(address account_, uint256 amount_) external override onlyVault {
