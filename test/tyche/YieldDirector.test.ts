@@ -93,7 +93,7 @@ describe("YieldDirector", async () => {
         )) as EncountrAuthority; // TODO
         encountr = (await encountrFactory.deploy(auth.address)) as EncountrERC20Token;
         sEnctr = (await sEnctrFactory.deploy()) as SEncountr;
-        gEnctr = (await gEnctrFactory.deploy(sEnctr.address, sEnctr.address)) as GENCTR; // Call migrate immediately
+        gEnctr = (await gEnctrFactory.deploy(sEnctr.address)) as GENCTR; // Call migrate immediately
         const blockNumBefore = await ethers.provider.getBlockNumber();
         const blockBefore = await ethers.provider.getBlock(blockNumBefore);
         staking = (await stakingFactory.deploy(
@@ -121,7 +121,7 @@ describe("YieldDirector", async () => {
         // Setup for each component
 
         // Needed for treasury deposit
-        //await gEnctr.migrate(staking.address, sEnctr.address);
+        await gEnctr.initialize(staking.address);
         await dai.mint(deployer.address, initialMint);
         await dai.approve(treasury.address, LARGE_APPROVAL);
 

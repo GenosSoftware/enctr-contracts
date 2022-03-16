@@ -14,5 +14,5 @@ interface IgENCTR is IERC20 {
 
     function balanceTo(uint256 _amount) external view returns (uint256);
 
-    function migrate(address _staking, address _sENCTR) external;
+    function initialize(address _staking) external;
 }

@@ -94,7 +94,7 @@ describe("Treasury", async () => {
         ); // TODO
         encountr = await encountrFactory.deploy(auth.address);
         sEnctr = await sEnctrFactory.deploy();
-        gEnctr = await gEnctrFactory.deploy(sEnctr.address, sEnctr.address); // Call migrate immediately
+        gEnctr = await gEnctrFactory.deploy(sEnctr.address); // Call migrate immediately
         staking = await stakingFactory.deploy(
             encountr.address,
             sEnctr.address,
@@ -115,7 +115,7 @@ describe("Treasury", async () => {
         // Setup for each component
 
         // Needed for treasury deposit
-        //await gEnctr.migrate(staking.address, sEnctr.address);
+        await gEnctr.initialize(staking.address);
         await dai.mint(deployer.address, initialMint);
         await dai.approve(treasury.address, LARGE_APPROVAL);
 

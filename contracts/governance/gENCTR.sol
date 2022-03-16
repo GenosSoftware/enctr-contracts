@@ -36,9 +36,10 @@ contract gENCTR is IgENCTR, ERC20 {
 
     /* ========== STATE VARIABLES ========== */
 
+    address internal initializer;
     IsENCTR public sENCTR;
     address public approved; // minter
-    bool public migrated;
+    bool public ready;
 
     mapping(address => mapping(uint256 => Checkpoint)) public checkpoints;
     mapping(address => uint256) public numCheckpoints;
@@ -46,9 +47,9 @@ contract gENCTR is IgENCTR, ERC20 {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _migrator, address _sENCTR) ERC20("Governance ENCTR", "gENCTR", 18) {
-        require(_migrator != address(0), "Zero address: Migrator");
-        approved = _migrator;
+    constructor(address _sENCTR) ERC20("Governance ENCTR", "gENCTR", 18) {
+        initializer = msg.sender;
+
         require(_sENCTR != address(0), "Zero address: sENCTR");
         sENCTR = IsENCTR(_sENCTR);
     }
@@ -56,21 +57,18 @@ contract gENCTR is IgENCTR, ERC20 {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
-     * @notice transfer mint rights from migrator to staking
-     * @notice can only be done once, at the time of contract migration
+     * @notice transfer mint rights staking
+     * @notice can only be done once
      * @param _staking address
-     * @param _sENCTR address
      */
-    function migrate(address _staking, address _sENCTR) external override onlyApproved {
-        require(!migrated, "Migrated");
-        migrated = true;
+    function initialize(address _staking) external override {
+        require(msg.sender == initializer, "Initializer:  caller is not initializer");
+        require(!ready, "Ready");
+        ready = true;
 
         require(_staking != approved, "Invalid argument");
         require(_staking != address(0), "Zero address found");
         approved = _staking;
-
-        require(_sENCTR != address(0), "Zero address found");
-        sENCTR = IsENCTR(_sENCTR);
     }
 
     /**
