@@ -26,4 +26,4 @@ jobs:
           npm install
 
       - name: Test
-        run: npx hardhat test
+        run: npx hardhat typechain && npx hardhat test
