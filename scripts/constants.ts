@@ -1,15 +1,16 @@
 export const CONTRACTS: Record<string, string> = {
-  encountr: "EncountrERC20Token",
-  sEnctr: "sEncountr",
-  gEnctr: "gENCTR",
-  staking: "EncountrStaking",
-  distributor: "Distributor",
-  treasury: "EncountrTreasury",
-  bondDepo: "EncountrBondDepository",
-  teller: "BondTeller",
-  bondingCalculator: "EncountrBondingCalculator",
-  authority: "EncountrAuthority",
   DAI: "DAI",
+  authority: "EncountrAuthority",
+  bondDepo: "EncountrBondDepository",
+  bondingCalculator: "EncountrBondingCalculator",
+  distributor: "Distributor",
+  encountr: "EncountrERC20Token",
+  gEnctr: "gENCTR",
+  sEnctr: "sEncountr",
+  sales: "EncountrPrivateSales",
+  staking: "EncountrStaking",
+  teller: "BondTeller",
+  treasury: "EncountrTreasury",
 };
 
 // Constructor Arguments

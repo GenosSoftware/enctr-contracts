@@ -30,7 +30,7 @@ func.dependencies = [
     CONTRACTS.treasury,
     CONTRACTS.encountr,
     CONTRACTS.bondingCalculator,
-    CONTRACTS.encountrAuthority,
+    CONTRACTS.authority,
 ];
 
 export default func;
