@@ -493,4 +493,14 @@ contract EncountrTreasury is EncountrAccessControlled, ITreasury {
     function baseSupply() external view override returns (uint256) {
         return ENCTR.totalSupply() - encountrDebt;
     }
+
+    /**
+     * @notice returns a view into treasury permissions
+     * @param _status uint
+     * @param _address address
+     * @return bool
+     */
+    function isPermitted(uint _status, address _address) external view override returns (bool) {
+        return permissions[STATUS(_status)][_address];
+    }
 }

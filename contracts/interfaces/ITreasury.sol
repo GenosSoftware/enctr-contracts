@@ -23,4 +23,6 @@ interface ITreasury {
     function excessReserves() external view returns (uint256);
 
     function baseSupply() external view returns (uint256);
+
+    function isPermitted(uint _status, address _address) external view returns (bool);
 }

@@ -8,11 +8,9 @@ import "./libraries/SafeERC20.sol";
 import "./interfaces/IERC20Metadata.sol";
 import "./interfaces/IBondDepository.sol";
 
-/// @title Encountr Bond Depository V2
-/// @author Zeus, Indigo
-/// Review by: JeffX
+/// @title Encountr Bond Depository
 
-contract EncountrBondDepositoryV2 is IBondDepository, NoteKeeper {
+contract EncountrBondDepository is IBondDepository, NoteKeeper {
     /* ======== DEPENDENCIES ======== */
 
     using SafeERC20 for IERC20;

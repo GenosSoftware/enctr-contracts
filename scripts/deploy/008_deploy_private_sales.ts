@@ -8,27 +8,21 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const { deployer } = await getNamedAccounts();
 
     const treasuryDeployment = await deployments.get(CONTRACTS.treasury);
-    const encountrDeployment = await deployments.get(CONTRACTS.encountr);
-    const stakingDeployment = await deployments.get(CONTRACTS.staking);
     const authorityDeployment = await deployments.get(CONTRACTS.authority);
 
-    await deploy(CONTRACTS.distributor, {
+    await deploy(CONTRACTS.sales, {
         from: deployer,
         args: [
             treasuryDeployment.address,
-            encountrDeployment.address,
-            stakingDeployment.address,
             authorityDeployment.address,
         ],
         log: true,
     });
 };
 
-func.tags = [CONTRACTS.distributor, "staking"];
+func.tags = [CONTRACTS.sales, "sales"];
 func.dependencies = [
     CONTRACTS.treasury,
-    CONTRACTS.encountr,
-    CONTRACTS.bondingCalculator,
     CONTRACTS.authority,
 ];
 

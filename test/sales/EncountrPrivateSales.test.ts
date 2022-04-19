@@ -4,7 +4,10 @@ import { smock } from "@defi-wonderland/smock";
 
 describe("EncountrPrivateSales", function () {
   let erc20: any;
+  let eDecimals: number;
   let stablecoin: any;
+  let sDecimals: number;
+  let treasury: any;
   let sales: any;
 
   let owner: any;
@@ -13,17 +16,21 @@ describe("EncountrPrivateSales", function () {
   beforeEach(async function () {
     [owner, ...buyerAccounts] = await ethers.getSigners();
 
+    const mintAmount = "100000000000000000000000000000000";
+
     // Mock stablecoin
     const sc = await smock.mock("MockERC20");
     stablecoin = await sc.deploy("MockDAI", "tDAI", 18);
     await stablecoin.deployed();
-    await stablecoin.mint(owner.address, 1e10);
+    await stablecoin.mint(owner.address, mintAmount);
+    sDecimals = await stablecoin.decimals();
 
     // ERC20
     const ERC20 = await smock.mock("MockERC20");
-    erc20 = await ERC20.deploy("MockEncountr", "tENCTR", 18);
+    erc20 = await ERC20.deploy("MockEncountr", "tENCTR", 9);
     await erc20.deployed();
-    await erc20.mint(owner.address, 1e10);
+    await erc20.mint(owner.address, mintAmount);
+    eDecimals = await erc20.decimals();
 
     // Authority
     const a = await ethers.getContractFactory("EncountrAuthority");
@@ -33,11 +40,20 @@ describe("EncountrPrivateSales", function () {
       owner.address,
       owner.address
     );
+    await authority.deployed();
+
+    // Treasury
+    const t = await ethers.getContractFactory("EncountrTreasury");
+    treasury = await t.deploy(erc20.address, 0, authority.address);
+    await treasury.deployed();
+    const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+    await treasury.enable("2", stablecoin.address, ZERO_ADDRESS);
 
     // EncountrPrivateSales
     const s = await ethers.getContractFactory("EncountrPrivateSales");
-    sales = await s.deploy(erc20.address, authority.address);
+    sales = await s.deploy(treasury.address, authority.address);
     await sales.deployed();
+    await treasury.enable("0", sales.address, ZERO_ADDRESS);
 
     erc20.transfer(sales.address, 1e10);
   });
@@ -54,26 +70,32 @@ describe("EncountrPrivateSales", function () {
   });
 
   it("saleId must equal currentSaleId", async function () {
-    const expectedEnctrPerUnit = 100;
+    const expectedEnctrPrice = "4000000000000000000";
 
     let tx = await sales.createSale(
-      expectedEnctrPerUnit,
+      expectedEnctrPrice,
+      erc20.address,
       stablecoin.address,
-      owner.address
+      true,
+      1
     );
     let rc = await tx.wait();
-    const [currentSaleId, enctrPerUnit, purchaseToken] = rc.events[0].args;
+    const [currentSaleId, tokenPrice, saleToken, purchaseToken] =
+      rc.events[0].args;
     expect(currentSaleId).to.equal(1);
     expect(currentSaleId).to.equal(await sales.currentSaleId());
-    expect(enctrPerUnit).to.equal(expectedEnctrPerUnit);
+    expect(tokenPrice).to.equal(expectedEnctrPrice);
+    expect(saleToken).to.equal(erc20.address);
     expect(purchaseToken).to.equal(stablecoin.address);
 
     await sales.stopSale(currentSaleId);
 
     tx = await sales.createSale(
-      expectedEnctrPerUnit,
+      expectedEnctrPrice,
+      erc20.address,
       stablecoin.address,
-      owner.address
+      true,
+      1
     );
     rc = await tx.wait();
     expect(rc.events[0].args[0]).to.equal(await sales.currentSaleId());
@@ -84,33 +106,58 @@ describe("EncountrPrivateSales", function () {
     await expect(
       sales
         .connect(buyerAccounts[0])
-        .createSale(100, stablecoin.address, buyerAccounts[0].address)
+        .createSale(
+          "4000000000000000000",
+          erc20.address,
+          stablecoin.address,
+          true,
+          1
+        )
     ).to.be.revertedWith("UNAUTHORIZED");
 
-    await sales.createSale(100, stablecoin.address, owner.address);
+    await sales.createSale(
+      "4000000000000000000",
+      erc20.address,
+      stablecoin.address,
+      true,
+      1
+    );
     await expect(
       sales.connect(buyerAccounts[0]).stopCurrentSale()
     ).to.be.revertedWith("UNAUTHORIZED");
   });
 
   it("only approved buyers are allowed", async function () {
-    const expectedEnctrPerUnit = 100;
-    const amountToSpend = 10;
+    const expectedEnctrPrice = ethers.BigNumber.from(4).mul(
+      ethers.BigNumber.from(10).pow(sDecimals)
+    );
+    const amountToBuy = ethers.BigNumber.from(10).mul(
+      ethers.BigNumber.from(10).pow(eDecimals)
+    );
+
+    const amountToSpend = expectedEnctrPrice
+      .div(ethers.BigNumber.from(10).pow(eDecimals))
+      .mul(amountToBuy);
 
     await stablecoin.transfer(buyerAccounts[0].address, amountToSpend);
     expect(await stablecoin.balanceOf(buyerAccounts[0].address)).to.equal(
       amountToSpend
     );
+    await stablecoin
+      .connect(buyerAccounts[0])
+      .approve(sales.address, amountToSpend);
 
     await sales.createSale(
-      expectedEnctrPerUnit,
+      expectedEnctrPrice,
+      erc20.address,
       stablecoin.address,
-      owner.address
+      true,
+      amountToBuy
     );
     await expect(
       sales
         .connect(buyerAccounts[0])
-        .buy(await sales.currentSaleId(), amountToSpend)
+        .buy(await sales.currentSaleId(), amountToBuy)
     ).to.be.revertedWith("buyer not approved!");
 
     await sales.approveBuyer(
@@ -118,21 +165,33 @@ describe("EncountrPrivateSales", function () {
       buyerAccounts[0].address
     );
 
-    await stablecoin
-      .connect(buyerAccounts[0])
-      .approve(sales.address, amountToSpend);
     await sales
       .connect(buyerAccounts[0])
-      .buy(await sales.currentSaleId(), amountToSpend);
+      .buy(await sales.currentSaleId(), amountToBuy);
 
-    expect(await stablecoin.balanceOf(buyerAccounts[0].address)).to.equal(0);
+    expect(await stablecoin.balanceOf(treasury.address)).to.equal(
+      amountToSpend
+    );
+    expect(
+      amountToSpend.div(ethers.BigNumber.from(10).pow(sDecimals))
+    ).to.equal(40);
+
     expect(await erc20.balanceOf(buyerAccounts[0].address)).to.equal(
-      amountToSpend * expectedEnctrPerUnit
+      amountToBuy
+    );
+    expect(amountToBuy.div(ethers.BigNumber.from(10).pow(eDecimals))).to.equal(
+      10
     );
   });
 
   it("stopped sale is unusable", async function () {
-    await sales.createSale(100, stablecoin.address, owner.address);
+    await sales.createSale(
+      "100000000000000000000",
+      erc20.address,
+      stablecoin.address,
+      true,
+      1
+    );
     await sales.approveBuyer(
       await sales.currentSaleId(),
       buyerAccounts[0].address
@@ -145,20 +204,23 @@ describe("EncountrPrivateSales", function () {
   });
 
   it("created sale is properly formatted", async function () {
-    const expectedEnctrPerUnit = 100;
+    const expectedEnctrPrice = "400000000000000000000";
     await sales.createSale(
-      expectedEnctrPerUnit,
+      expectedEnctrPrice,
+      erc20.address,
       stablecoin.address,
-      owner.address
+      true,
+      1
     );
 
     const saleId = await sales.currentSaleId();
     let sale = await sales.sales(saleId);
     expect(sale.active).to.be.true; // eslint-disable-line no-unused-expressions
     expect(sale.id).to.equal(saleId);
-    expect(sale.enctrPerUnit).to.equal(expectedEnctrPerUnit);
+    expect(sale.tokenPrice).to.equal(expectedEnctrPrice);
+    expect(sale.saleToken).to.equal(erc20.address);
     expect(sale.purchaseToken).to.equal(stablecoin.address);
-    expect(sale.proceedsAddress).to.equal(owner.address);
+    expect(sale.isTreasuryDeposit).to.equal(true);
 
     await sales.stopCurrentSale();
 
@@ -167,12 +229,31 @@ describe("EncountrPrivateSales", function () {
   });
 
   it("mass approve buyers", async function () {
-    await sales.createSale(100, stablecoin.address, owner.address);
+    const expectedEnctrPrice = ethers.BigNumber.from(4).mul(
+      ethers.BigNumber.from(10).pow(sDecimals)
+    );
+    const amountToBuy = ethers.BigNumber.from(10).mul(
+      ethers.BigNumber.from(10).pow(eDecimals)
+    );
+
+    const amountToSpend = expectedEnctrPrice
+      .div(ethers.BigNumber.from(10).pow(eDecimals))
+      .mul(amountToBuy);
+
+    await sales.createSale(
+      expectedEnctrPrice,
+      erc20.address,
+      stablecoin.address,
+      true,
+      amountToBuy
+    );
 
     const addresses = [buyerAccounts[0], buyerAccounts[1], buyerAccounts[2]];
     for (let i = 0; i < addresses.length; i++) {
       await expect(
-        sales.connect(addresses[i]).buy(await sales.currentSaleId(), 10)
+        sales
+          .connect(addresses[i])
+          .buy(await sales.currentSaleId(), amountToBuy)
       ).to.be.revertedWith("buyer not approved!");
     }
 
@@ -182,49 +263,86 @@ describe("EncountrPrivateSales", function () {
     );
 
     for (let i = 0; i < addresses.length; i++) {
-      const amountToSpend = 10;
       await stablecoin.transfer(addresses[i].address, amountToSpend);
       await stablecoin
         .connect(addresses[i])
         .approve(sales.address, amountToSpend);
       await sales
         .connect(addresses[i])
-        .buy(await sales.currentSaleId(), amountToSpend);
+        .buy(await sales.currentSaleId(), amountToBuy);
     }
   });
 
   it("can withdraw tokens", async function () {
-    expect(await erc20.balanceOf(owner.address)).to.equal(0);
+    expect(await erc20.balanceOf(owner.address)).to.equal(
+      "99999999999999999999990000000000"
+    );
     await expect(
       sales.connect(buyerAccounts[0]).withdrawTokens(erc20.address)
     ).to.be.revertedWith("UNAUTHORIZED");
     sales.withdrawTokens(erc20.address);
-    expect(await erc20.balanceOf(owner.address)).to.equal(1e10);
+    expect(await erc20.balanceOf(owner.address)).to.equal(
+      "100000000000000000000000000000000"
+    );
   });
 
   it("cannot create a free sale", async function () {
     await expect(
-      sales.createSale(0, stablecoin.address, owner.address)
+      sales.createSale(0, erc20.address, stablecoin.address, false, 1)
     ).to.be.revertedWith("no free lunch!");
+
+    await expect(
+      sales.createSale(
+        "999999999999999999",
+        erc20.address,
+        stablecoin.address,
+        true,
+        1
+      )
+    ).to.be.revertedWith("need ENCTR backing!");
   });
 
   it("cannot start a sale twice", async function () {
-    await sales.createSale(1, stablecoin.address, owner.address);
+    await sales.createSale(
+      "1000000000000000000",
+      erc20.address,
+      stablecoin.address,
+      true,
+      1
+    );
 
     await expect(
-      sales.createSale(1, stablecoin.address, owner.address)
+      sales.createSale(
+        "1000000000000000000",
+        erc20.address,
+        stablecoin.address,
+        true,
+        1
+      )
     ).to.be.revertedWith("sale ongoing!");
   });
 
   it("cannot stop an inactive sale", async function () {
     await expect(sales.stopSale(1)).to.be.revertedWith("sale is not active!");
-    await sales.createSale(1, stablecoin.address, owner.address);
+    await sales.createSale(
+      "1000000000000000000",
+      erc20.address,
+      stablecoin.address,
+      true,
+      1
+    );
     await sales.stopSale(1);
     await expect(sales.stopSale(1)).to.be.revertedWith("sale is not active!");
   });
 
   it("cannot double approve a buyer", async function () {
-    await sales.createSale(100, stablecoin.address, owner.address);
+    await sales.createSale(
+      "1000000000000000000",
+      erc20.address,
+      stablecoin.address,
+      true,
+      1
+    );
     await sales.approveBuyer(
       await sales.currentSaleId(),
       buyerAccounts[0].address
@@ -232,5 +350,84 @@ describe("EncountrPrivateSales", function () {
     await expect(
       sales.approveBuyer(await sales.currentSaleId(), buyerAccounts[0].address)
     ).to.be.revertedWith("buyer is already approved!");
+  });
+
+  it("can buy tokens from the contract", async function () {
+    const expectedEnctrPrice = ethers.BigNumber.from(1)
+      .mul(ethers.BigNumber.from(10).pow(sDecimals))
+      .div(10);
+    const amountToBuy = ethers.BigNumber.from(10).mul(
+      ethers.BigNumber.from(10).pow(eDecimals)
+    );
+    const amountToSpend = expectedEnctrPrice
+      .mul(amountToBuy)
+      .div(ethers.BigNumber.from(10).pow(eDecimals));
+
+    await sales.createSale(
+      expectedEnctrPrice,
+      erc20.address,
+      stablecoin.address,
+      false,
+      amountToBuy
+    );
+    await sales.approveBuyer(
+      await sales.currentSaleId(),
+      buyerAccounts[0].address
+    );
+    await stablecoin.transfer(buyerAccounts[0].address, amountToSpend);
+    await stablecoin
+      .connect(buyerAccounts[0])
+      .approve(sales.address, amountToSpend);
+    await sales
+      .connect(buyerAccounts[0])
+      .buy(await sales.currentSaleId(), amountToBuy);
+
+    expect(await stablecoin.balanceOf(sales.address)).to.equal(amountToSpend);
+    expect(
+      amountToSpend.div(ethers.BigNumber.from(10).pow(sDecimals))
+    ).to.equal(1);
+
+    expect(await erc20.balanceOf(buyerAccounts[0].address)).to.equal(
+      amountToBuy
+    );
+    expect(amountToBuy.div(ethers.BigNumber.from(10).pow(eDecimals))).to.equal(
+      10
+    );
+  });
+
+  it("cannot buy more than max for sale", async function () {
+    const expectedEnctrPrice = ethers.BigNumber.from(10).mul(
+      ethers.BigNumber.from(10).pow(sDecimals)
+    );
+
+    // Treasury
+    await sales.createSale(
+      expectedEnctrPrice,
+      erc20.address,
+      stablecoin.address,
+      true,
+      1
+    );
+    let saleId = await sales.currentSaleId();
+    await sales.approveBuyer(saleId, buyerAccounts[0].address);
+    await expect(
+      sales.connect(buyerAccounts[0]).buy(saleId, 2)
+    ).to.be.revertedWith("too many tokens!");
+
+    await sales.stopSale(saleId);
+
+    // Direct from contract
+    await sales.createSale(
+      expectedEnctrPrice,
+      erc20.address,
+      stablecoin.address,
+      false,
+      1
+    );
+    saleId = await sales.currentSaleId();
+    await sales.approveBuyer(saleId, buyerAccounts[0].address);
+    await expect(
+      sales.connect(buyerAccounts[0]).buy(saleId, 2)
+    ).to.be.revertedWith("too many tokens!");
   });
 });
