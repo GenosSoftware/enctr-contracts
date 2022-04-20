@@ -23,6 +23,7 @@ contract pEncountr is ERC20Permit, EncountrAccessControlled { // solhint-disable
     {
         requireSellerApproval = true;
         allowMinting = true;
+        _addApprovedSeller(address(0));
         _addApprovedSeller(address(this));
         _addApprovedSeller(msg.sender);
         uint256 initialSupply_ = 1e9 * 1e18;
@@ -72,8 +73,8 @@ contract pEncountr is ERC20Permit, EncountrAccessControlled { // solhint-disable
         return true;
     }
 
-    function _beforeTokenTransfer(address from_, address to_, uint256) internal view override {
-        require((_balances[to_] > 0 || isApprovedSeller[from_] == true), "not approved to transfer pENCTR.");
+    function _beforeTokenTransfer(address from_, address, uint256) internal view override {
+        require((!requireSellerApproval || isApprovedSeller[from_] == true), "not approved to transfer pENCTR.");
     }
 
     function mint(address recipient_, uint256 amount_) public virtual onlyGovernor() {

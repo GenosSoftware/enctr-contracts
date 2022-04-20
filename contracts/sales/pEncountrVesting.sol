@@ -9,7 +9,6 @@ import "../libraries/SafeERC20.sol";
 import "../interfaces/IERC20.sol";
 import "../interfaces/IENCTR.sol";
 import "../interfaces/IpENCTR.sol";
-import "../interfaces/IsENCTR.sol";
 import "../interfaces/ITreasury.sol";
 
 contract ExercisepENCTR is EncountrAccessControlled {
@@ -17,10 +16,8 @@ contract ExercisepENCTR is EncountrAccessControlled {
     using SafeERC20 for IERC20;
     using SafeERC20 for IENCTR;
     using SafeERC20 for IpENCTR;
-    using SafeERC20 for IsENCTR;
 
     IpENCTR public immutable pENCTR;
-    IsENCTR public immutable sENCTR;
     IENCTR public immutable ENCTR; // solhint-disable-line var-name-mixedcase
     IERC20 public immutable DAI; // solhint-disable-line var-name-mixedcase
     ITreasury public immutable treasury;
@@ -37,7 +34,6 @@ contract ExercisepENCTR is EncountrAccessControlled {
     constructor(
         address _ENCTR, // solhint-disable-line var-name-mixedcase
         address _pENCTR,
-        address _sENCTR,
         address _DAI, // solhint-disable-line var-name-mixedcase
         address _treasury,
         address _authority
@@ -47,9 +43,6 @@ contract ExercisepENCTR is EncountrAccessControlled {
 
         require(_pENCTR != address(0), "zero address.");
         pENCTR = IpENCTR(_pENCTR);
-
-        require(_sENCTR != address(0), "zero address.");
-        sENCTR = IsENCTR(_sENCTR);
 
         require(_DAI != address(0), "zero address.");
         DAI = IERC20(_DAI);
@@ -111,6 +104,6 @@ contract ExercisepENCTR is EncountrAccessControlled {
     }
 
     function redeemable(Term memory _info) internal view returns (uint) {
-        return (sENCTR.circulatingSupply().mul(_info.percent).mul(1000)).sub(_info.claimed);
+        return (ENCTR.totalSupply().mul(_info.percent).mul(1000)).sub(_info.claimed);
     }
 }
