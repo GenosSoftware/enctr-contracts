@@ -17,7 +17,9 @@ struct Sale {
     IERC20 saleToken;
     IERC20 purchaseToken;
     bool isTreasuryDeposit;
-    uint256 maxSaleTokenCount;
+    uint256 maxTokensForSale;
+    uint256 totalTokensSold;
+    uint256 maxTokensForAddress;
 }
 
 contract EncountrPrivateSales is EncountrAccessControlled {
@@ -31,7 +33,7 @@ contract EncountrPrivateSales is EncountrAccessControlled {
 
     ITreasury public treasury;
 
-    mapping(uint256 => mapping(address => bool)) public approvedBuyers;
+    mapping(uint256 => mapping(address => uint256)) public buyerAllowances;
     mapping(uint256 => Sale) public sales;
     uint256 public currentSaleId;
 
@@ -48,7 +50,8 @@ contract EncountrPrivateSales is EncountrAccessControlled {
         address saleToken,
         address purchaseToken,
         bool isTreasuryDeposit,
-        uint256 maxSaleTokenCount
+        uint256 maxTokensForSale,
+        uint256 maxTokensForAddress
     ) external onlyGovernor() returns (uint256) {
         if (isTreasuryDeposit) {
             require(tokenPrice >= 10**IERC20Metadata(purchaseToken).decimals(), "need ENCTR backing!");
@@ -68,7 +71,9 @@ contract EncountrPrivateSales is EncountrAccessControlled {
         newSale.saleToken = IERC20(saleToken);
         newSale.purchaseToken = IERC20(purchaseToken);
         newSale.isTreasuryDeposit = isTreasuryDeposit;
-        newSale.maxSaleTokenCount = maxSaleTokenCount;
+        newSale.maxTokensForSale = maxTokensForSale;
+        newSale.totalTokensSold = 0;
+        newSale.maxTokensForAddress = maxTokensForAddress;
 
         emit SaleStarted(currentSaleId, tokenPrice, IERC20(saleToken), IERC20(purchaseToken));
         return currentSaleId;
@@ -90,8 +95,7 @@ contract EncountrPrivateSales is EncountrAccessControlled {
 
     function _approveBuyer(uint256 _saleId, address _buyer) internal {
         require(sales[_saleId].active, "sale is not active!");
-        require(approvedBuyers[_saleId][_buyer] == false, "buyer is already approved!");
-        approvedBuyers[_saleId][_buyer] = true;
+        buyerAllowances[_saleId][_buyer] = sales[_saleId].maxTokensForAddress;
         emit BuyerApproved(_saleId, _buyer);
     }
 
@@ -109,10 +113,9 @@ contract EncountrPrivateSales is EncountrAccessControlled {
 
     function _buyFromTreasury(uint256 _saleId, uint256 _amountOfEnctr) internal {
         uint8 decimals = IERC20Metadata(address(sales[_saleId].saleToken)).decimals();
-        uint256 totalPrice = sales[_saleId].tokenPrice.div(10**decimals).mul(_amountOfEnctr);
+        uint256 totalPrice = sales[_saleId].tokenPrice.mul(_amountOfEnctr).div(10**decimals);
 
         sales[_saleId].purchaseToken.safeTransferFrom(msg.sender, address(this), totalPrice);
-
         sales[_saleId].purchaseToken.safeApprove(address(treasury), totalPrice);
         treasury.deposit(
             totalPrice,
@@ -132,39 +135,20 @@ contract EncountrPrivateSales is EncountrAccessControlled {
 
     function buy(uint256 _saleId, uint256 _amountOfEnctr) external {
         require(sales[_saleId].active, "sale is not active!");
-        require(approvedBuyers[_saleId][msg.sender], "buyer not approved!");
-        require(_amountOfEnctr <= sales[_saleId].maxSaleTokenCount, "too many tokens!");
+        require(buyerAllowances[_saleId][msg.sender] >= _amountOfEnctr, "buyer not approved!");
+        require(sales[_saleId].totalTokensSold + _amountOfEnctr <= sales[_saleId].maxTokensForSale, "sold out!");
 
         if (sales[_saleId].isTreasuryDeposit) {
             _buyFromTreasury(_saleId, _amountOfEnctr);
         } else {
             _buyFromContract(_saleId, _amountOfEnctr);
         }
+
+        buyerAllowances[_saleId][msg.sender] -= _amountOfEnctr;
+        sales[_saleId].totalTokensSold += _amountOfEnctr;
     }
 
     function withdrawTokens(address _tokenToWithdraw) external onlyGovernor() {
         IERC20(_tokenToWithdraw).transfer(msg.sender, IERC20(_tokenToWithdraw).balanceOf(address(this)));
-    }
-
-    function toString(uint256 value) internal pure returns (string memory) {
-        // Inspired by OraclizeAPI's implementation - MIT licence
-        // https://github.com/oraclize/ethereum-api/blob/b42146b063c7d6ee1358846c198246239e9360e8/oraclizeAPI_0.4.25.sol
-
-        if (value == 0) {
-            return "0";
-        }
-        uint256 temp = value;
-        uint256 digits;
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
-        }
-        bytes memory buffer = new bytes(digits);
-        while (value != 0) {
-            digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
-            value /= 10;
-        }
-        return string(buffer);
     }
 }
