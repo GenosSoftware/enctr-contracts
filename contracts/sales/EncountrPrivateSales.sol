@@ -20,6 +20,7 @@ struct Sale {
     uint256 maxTokensForSale;
     uint256 totalTokensSold;
     uint256 maxTokensForAddress;
+    uint256 minTokensForAddress;
 }
 
 contract EncountrPrivateSales is EncountrAccessControlled {
@@ -51,16 +52,17 @@ contract EncountrPrivateSales is EncountrAccessControlled {
         address purchaseToken,
         bool isTreasuryDeposit,
         uint256 maxTokensForSale,
-        uint256 maxTokensForAddress
+        uint256 maxTokensForAddress,
+        uint256 minTokensForAddress
     ) external onlyGovernor() returns (uint256) {
         if (isTreasuryDeposit) {
-            require(tokenPrice >= 10**IERC20Metadata(purchaseToken).decimals(), "need ENCTR backing!");
+            require(tokenPrice >= 10**IERC20Metadata(purchaseToken).decimals(), "need ENCTR backing");
         } else {
-            require(tokenPrice > 0, "no free lunch!");
+            require(tokenPrice > 0, "no free lunch");
         }
 
-        require(sales[currentSaleId].active == false, "sale ongoing!");
-        require(treasury.isPermitted(2, purchaseToken), "not a valid purchase token!");
+        require(sales[currentSaleId].active == false, "sale ongoing");
+        require(treasury.isPermitted(2, purchaseToken), "not a valid purchase token");
 
         currentSaleId += 1;
 
@@ -74,6 +76,7 @@ contract EncountrPrivateSales is EncountrAccessControlled {
         newSale.maxTokensForSale = maxTokensForSale;
         newSale.totalTokensSold = 0;
         newSale.maxTokensForAddress = maxTokensForAddress;
+        newSale.minTokensForAddress = minTokensForAddress;
 
         emit SaleStarted(currentSaleId, tokenPrice, IERC20(saleToken), IERC20(purchaseToken));
         return currentSaleId;
@@ -88,13 +91,13 @@ contract EncountrPrivateSales is EncountrAccessControlled {
     }
 
     function _stop(uint256 id) internal {
-        require(sales[id].active, "sale is not active!");
+        require(sales[id].active, "sale is not active");
         sales[id].active = false;
         emit SaleEnded(id);
     }
 
     function _approveBuyer(uint256 _saleId, address _buyer) internal {
-        require(sales[_saleId].active, "sale is not active!");
+        require(sales[_saleId].active, "sale is not active");
         buyerAllowances[_saleId][_buyer] = sales[_saleId].maxTokensForAddress;
         emit BuyerApproved(_saleId, _buyer);
     }
@@ -134,9 +137,10 @@ contract EncountrPrivateSales is EncountrAccessControlled {
     }
 
     function buy(uint256 _saleId, uint256 _amountOfEnctr) external {
-        require(sales[_saleId].active, "sale is not active!");
-        require(buyerAllowances[_saleId][msg.sender] >= _amountOfEnctr, "buyer not approved!");
-        require(sales[_saleId].totalTokensSold + _amountOfEnctr <= sales[_saleId].maxTokensForSale, "sold out!");
+        require(sales[_saleId].active, "sale is not active");
+        require(buyerAllowances[_saleId][msg.sender] >= _amountOfEnctr, "buyer not approved");
+        require(_amountOfEnctr >= sales[_saleId].minTokensForAddress, "below minimum for sale");
+        require(sales[_saleId].totalTokensSold + _amountOfEnctr <= sales[_saleId].maxTokensForSale, "sold out");
 
         if (sales[_saleId].isTreasuryDeposit) {
             _buyFromTreasury(_saleId, _amountOfEnctr);

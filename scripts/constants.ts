@@ -22,7 +22,7 @@ export const EPOCH_LENGTH_IN_BLOCKS = "28800";
 export const FIRST_EPOCH_NUMBER = "0";
 export const FIRST_EPOCH_TIME = "1650058513"; // TODO!!!
 export const INITIAL_REWARD_RATE = "4000";
-export const INITIAL_INDEX = "46721314322";
+export const INITIAL_INDEX = "0";
 export const BOUNTY_AMOUNT = "100000000";
 // For testnet only
 export const INITIAL_MINT = "60000" + "0".repeat(18); // 60K deposit.

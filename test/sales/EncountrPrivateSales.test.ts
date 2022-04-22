@@ -63,10 +63,10 @@ describe("EncountrPrivateSales", function () {
 
     await expect(
       sales.connect(buyerAccounts[0]).buy(await sales.currentSaleId(), 1e10)
-    ).to.be.revertedWith("sale is not active!");
+    ).to.be.revertedWith("sale is not active");
     await expect(
       sales.approveBuyer(await sales.currentSaleId(), buyerAccounts[0].address)
-    ).to.be.revertedWith("sale is not active!");
+    ).to.be.revertedWith("sale is not active");
   });
 
   it("saleId must equal currentSaleId", async function () {
@@ -78,7 +78,8 @@ describe("EncountrPrivateSales", function () {
       stablecoin.address,
       true,
       1,
-      1
+      1,
+      0
     );
     let rc = await tx.wait();
     const [currentSaleId, tokenPrice, saleToken, purchaseToken] =
@@ -97,7 +98,8 @@ describe("EncountrPrivateSales", function () {
       stablecoin.address,
       true,
       1,
-      1
+      1,
+      0
     );
     rc = await tx.wait();
     expect(rc.events[0].args[0]).to.equal(await sales.currentSaleId());
@@ -114,7 +116,8 @@ describe("EncountrPrivateSales", function () {
           stablecoin.address,
           true,
           1,
-          1
+          1,
+          0
         )
     ).to.be.revertedWith("UNAUTHORIZED");
 
@@ -124,7 +127,8 @@ describe("EncountrPrivateSales", function () {
       stablecoin.address,
       true,
       1,
-      1
+      1,
+      0
     );
     await expect(
       sales.connect(buyerAccounts[0]).stopCurrentSale()
@@ -157,13 +161,14 @@ describe("EncountrPrivateSales", function () {
       stablecoin.address,
       true,
       amountToBuy,
-      amountToBuy
+      amountToBuy,
+      0
     );
     await expect(
       sales
         .connect(buyerAccounts[0])
         .buy(await sales.currentSaleId(), amountToBuy)
-    ).to.be.revertedWith("buyer not approved!");
+    ).to.be.revertedWith("buyer not approved");
 
     await sales.approveBuyer(
       await sales.currentSaleId(),
@@ -196,7 +201,8 @@ describe("EncountrPrivateSales", function () {
       stablecoin.address,
       true,
       1,
-      1
+      1,
+      0
     );
     await sales.approveBuyer(
       await sales.currentSaleId(),
@@ -206,7 +212,7 @@ describe("EncountrPrivateSales", function () {
 
     await expect(
       sales.connect(buyerAccounts[0]).buy(await sales.currentSaleId(), 1e10)
-    ).to.be.revertedWith("sale is not active!");
+    ).to.be.revertedWith("sale is not active");
   });
 
   it("created sale is properly formatted", async function () {
@@ -217,7 +223,8 @@ describe("EncountrPrivateSales", function () {
       stablecoin.address,
       true,
       1,
-      1
+      1,
+      0
     );
 
     const saleId = await sales.currentSaleId();
@@ -253,7 +260,8 @@ describe("EncountrPrivateSales", function () {
       stablecoin.address,
       true,
       amountToBuy.mul(3),
-      amountToBuy
+      amountToBuy,
+      0
     );
 
     const addresses = [buyerAccounts[0], buyerAccounts[1], buyerAccounts[2]];
@@ -262,7 +270,7 @@ describe("EncountrPrivateSales", function () {
         sales
           .connect(addresses[i])
           .buy(await sales.currentSaleId(), amountToBuy)
-      ).to.be.revertedWith("buyer not approved!");
+      ).to.be.revertedWith("buyer not approved");
     }
 
     await sales.approveBuyers(
@@ -296,8 +304,8 @@ describe("EncountrPrivateSales", function () {
 
   it("cannot create a free sale", async function () {
     await expect(
-      sales.createSale(0, erc20.address, stablecoin.address, false, 1, 1)
-    ).to.be.revertedWith("no free lunch!");
+      sales.createSale(0, erc20.address, stablecoin.address, false, 1, 1, 0)
+    ).to.be.revertedWith("no free lunch");
 
     await expect(
       sales.createSale(
@@ -306,9 +314,10 @@ describe("EncountrPrivateSales", function () {
         stablecoin.address,
         true,
         1,
-        1
+        1,
+        0
       )
-    ).to.be.revertedWith("need ENCTR backing!");
+    ).to.be.revertedWith("need ENCTR backing");
   });
 
   it("cannot start a sale twice", async function () {
@@ -318,7 +327,8 @@ describe("EncountrPrivateSales", function () {
       stablecoin.address,
       true,
       1,
-      1
+      1,
+      0
     );
 
     await expect(
@@ -328,23 +338,25 @@ describe("EncountrPrivateSales", function () {
         stablecoin.address,
         true,
         1,
-        1
+        1,
+        0
       )
-    ).to.be.revertedWith("sale ongoing!");
+    ).to.be.revertedWith("sale ongoing");
   });
 
   it("cannot stop an inactive sale", async function () {
-    await expect(sales.stopSale(1)).to.be.revertedWith("sale is not active!");
+    await expect(sales.stopSale(1)).to.be.revertedWith("sale is not active");
     await sales.createSale(
       "1000000000000000000",
       erc20.address,
       stablecoin.address,
       true,
       1,
-      1
+      1,
+      0
     );
     await sales.stopSale(1);
-    await expect(sales.stopSale(1)).to.be.revertedWith("sale is not active!");
+    await expect(sales.stopSale(1)).to.be.revertedWith("sale is not active");
   });
 
   it("can buy tokens from the contract", async function () {
@@ -364,7 +376,8 @@ describe("EncountrPrivateSales", function () {
       stablecoin.address,
       false,
       amountToBuy,
-      amountToBuy
+      amountToBuy,
+      0
     );
     await sales.approveBuyer(
       await sales.currentSaleId(),
@@ -411,14 +424,15 @@ describe("EncountrPrivateSales", function () {
         stablecoin.address,
         isTreasuryDeposit,
         2, // We will only sell two tokens max
-        1 // No one gets more than one token
+        1, // No one gets more than one token
+        0
       );
       const saleId = await sales.currentSaleId();
 
       await sales.approveBuyer(saleId, buyerAccounts[0].address);
       await expect(
         sales.connect(buyerAccounts[0]).buy(saleId, 2)
-      ).to.be.revertedWith("buyer not approved!");
+      ).to.be.revertedWith("buyer not approved");
       await sales.connect(buyerAccounts[0]).buy(saleId, 1);
 
       await sales.approveBuyer(saleId, buyerAccounts[1].address);
@@ -427,9 +441,31 @@ describe("EncountrPrivateSales", function () {
       await sales.approveBuyer(saleId, buyerAccounts[2].address);
       await expect(
         sales.connect(buyerAccounts[2]).buy(saleId, 1)
-      ).to.be.revertedWith("sold out!");
+      ).to.be.revertedWith("sold out");
 
       await sales.stopSale(saleId);
     }
+  });
+
+  it("cannot buy less than min for sale", async function () {
+    const expectedEnctrPrice = ethers.BigNumber.from(10).mul(
+      ethers.BigNumber.from(10).pow(sDecimals)
+    );
+
+    await sales.createSale(
+      expectedEnctrPrice,
+      erc20.address,
+      stablecoin.address,
+      false,
+      2,
+      2,
+      2
+    );
+    const saleId = await sales.currentSaleId();
+
+    await sales.approveBuyer(saleId, buyerAccounts[0].address);
+    await expect(
+      sales.connect(buyerAccounts[0]).buy(saleId, 1)
+    ).to.be.revertedWith("below minimum for sale");
   });
 });
