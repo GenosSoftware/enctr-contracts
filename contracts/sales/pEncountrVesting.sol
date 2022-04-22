@@ -104,6 +104,6 @@ contract ExercisepENCTR is EncountrAccessControlled {
     }
 
     function redeemable(Term memory _info) internal view returns (uint) {
-        return (ENCTR.totalSupply().mul(_info.percent).mul(1000)).sub(_info.claimed);
+        return (ENCTR.totalSupply().mul(_info.percent).div(1000000)).sub(_info.claimed);
     }
 }

@@ -17,7 +17,7 @@ contract pEncountr is ERC20Permit, EncountrAccessControlled { // solhint-disable
     constructor(
         address _authority
     )
-        ERC20("pEncountr", "pENCTR", 18)
+        ERC20("pEncountr", "pENCTR", 9)
         ERC20Permit("pEncountr")
         EncountrAccessControlled(IEncountrAuthority(_authority))
     {
@@ -26,7 +26,7 @@ contract pEncountr is ERC20Permit, EncountrAccessControlled { // solhint-disable
         _addApprovedSeller(address(0));
         _addApprovedSeller(address(this));
         _addApprovedSeller(msg.sender);
-        uint256 initialSupply_ = 1e9 * 1e18;
+        uint256 initialSupply_ = 1e9 * 1e9;
         _mint(msg.sender, initialSupply_);
     }
 

@@ -7,7 +7,7 @@ describe("pEncountr", function () {
   let owner: any;
   let buyerAccounts: any[];
 
-  const one = ethers.BigNumber.from(1).mul(ethers.BigNumber.from(10).pow(18));
+  const one = ethers.BigNumber.from(1).mul(ethers.BigNumber.from(10).pow(9));
 
   beforeEach(async function () {
     [owner, ...buyerAccounts] = await ethers.getSigners();
