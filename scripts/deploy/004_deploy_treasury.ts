@@ -15,7 +15,6 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
     const authorityDeployment = await deployments.get(CONTRACTS.authority);
 
-    // TODO: TIMELOCK SET TO 0 FOR NOW, CHANGE FOR ACTUAL DEPLOYMENT
     const treasuryDeployment = await deploy(CONTRACTS.treasury, {
         from: deployer,
         args: [encountrDeployment.address, TREASURY_TIMELOCK, authorityDeployment.address],

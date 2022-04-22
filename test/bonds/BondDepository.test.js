@@ -51,7 +51,7 @@ describe("Bond Depository", async () => {
         erc20Factory = await smock.mock("MockERC20");
         gEnctrFactory = await smock.mock("MockGEnctr");
 
-        depositoryFactory = await ethers.getContractFactory("EncountrBondDepositoryV2");
+        depositoryFactory = await ethers.getContractFactory("EncountrBondDepository");
 
         const block = await ethers.provider.getBlock("latest");
         conclusion = block.timestamp + timeToConclusion;

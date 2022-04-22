@@ -10,6 +10,7 @@ import {
     SEncountr__factory,
     GENCTR__factory,
     EncountrTreasury__factory,
+    EncountrBondDepository__factory,
 } from "../../typechain";
 
 // TODO: Shouldn't run setup methods if the contracts weren't redeployed.
@@ -25,6 +26,7 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const distributorDeployment = await deployments.get(CONTRACTS.distributor);
     const treasuryDeployment = await deployments.get(CONTRACTS.treasury);
     const stakingDeployment = await deployments.get(CONTRACTS.staking);
+    const bondDepoDeployment = await deployments.get(CONTRACTS.bondDepo);
 
     const authorityContract = await EncountrAuthority__factory.connect(
         authorityDeployment.address,
@@ -36,6 +38,7 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const distributor = Distributor__factory.connect(distributorDeployment.address, signer);
     const staking = EncountrStaking__factory.connect(stakingDeployment.address, signer);
     const treasury = EncountrTreasury__factory.connect(treasuryDeployment.address, signer);
+    const bondDepo = EncountrBondDepository__factory.connect(bondDepoDeployment.address, signer);
 
     // Step 1: Set treasury as vault on authority
     await waitFor(authorityContract.pushVault(treasury.address, true));
@@ -67,7 +70,14 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     // await encountr.approve(staking.address, LARGE_APPROVAL);
 
     // Step 6: link staking to gENCTR
-    await waitFor(gEnctr.initialize(staking.address))
+    if (await !gEnctr.ready()) {
+      await waitFor(gEnctr.initialize(staking.address))
+    }
+    console.log("Setup -- link staking to gENCTR");
+
+    // Step 7: add bond depo
+    await waitFor(treasury.enable(8, bondDepo.address, ethers.constants.AddressZero)); // Allows bond depo to mint encountr.
+    console.log("Setup -- treasury.enable(8):  bond depo enabled to mint encountr on treasury");
 };
 
 func.tags = ["setup"];
