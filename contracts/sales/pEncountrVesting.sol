@@ -28,7 +28,6 @@ contract ExercisepENCTR is EncountrAccessControlled {
         uint max;
     }
     mapping(address => Term) public terms;
-
     mapping(address => address) public walletChange;
 
     constructor(
@@ -68,6 +67,7 @@ contract ExercisepENCTR is EncountrAccessControlled {
     // Allows wallet to redeem pENCTR for ENCTR
     function exercise(uint _amount) external {
         Term memory info = terms[msg.sender];
+
         require(redeemable(info) >= _amount, "Not enough vested");
         require(info.max.sub(info.claimed) >= _amount, "Claimed over max");
 

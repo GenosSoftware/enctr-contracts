@@ -8,6 +8,8 @@ export const CONTRACTS: Record<string, string> = {
   gEnctr: "gENCTR",
   sEnctr: "sEncountr",
   sales: "EncountrPrivateSales",
+  pEnctr: "pEncountr",
+  vesting: "ExercisepENCTR",
   staking: "EncountrStaking",
   teller: "BondTeller",
   treasury: "EncountrTreasury",
@@ -20,7 +22,7 @@ export const TREASURY_TIMELOCK = 6600;
 export const LARGE_APPROVAL = "100000000000000000000000000000000";
 export const EPOCH_LENGTH_IN_BLOCKS = "28800";
 export const FIRST_EPOCH_NUMBER = "0";
-export const FIRST_EPOCH_TIME = "1650058513"; // TODO!!!
+export const FIRST_EPOCH_TIME = "1651024080"; // TODO!!!
 export const INITIAL_REWARD_RATE = "4000";
 export const INITIAL_INDEX = "0";
 export const BOUNTY_AMOUNT = "100000000";
