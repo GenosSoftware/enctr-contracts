@@ -73,6 +73,9 @@ const config: HardhatUserConfig = {
     deployer: {
       default: 0,
     },
+    dai: {
+      1: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
