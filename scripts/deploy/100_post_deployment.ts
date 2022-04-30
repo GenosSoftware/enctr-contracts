@@ -101,7 +101,7 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         break;
       }
     } catch (e) {
-      console.error(e);
+      console.log("Need to add a recipient.");
       break;
     }
   }

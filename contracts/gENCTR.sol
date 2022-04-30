@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.5;
 
-import "../libraries/SafeMath.sol";
-import "../libraries/Address.sol";
+import "./libraries/SafeMath.sol";
+import "./libraries/Address.sol";
 
-import "../interfaces/IsENCTR.sol";
-import "../interfaces/IgENCTR.sol";
-import "../types/ERC20.sol";
+import "./interfaces/IsENCTR.sol";
+import "./interfaces/IgENCTR.sol";
+import "./types/ERC20.sol";
 
 contract gENCTR is IgENCTR, ERC20 {
     /* ========== DEPENDENCIES ========== */
@@ -47,7 +47,7 @@ contract gENCTR is IgENCTR, ERC20 {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _sENCTR) ERC20("Governance ENCTR", "gENCTR", 18) {
+    constructor(address _sENCTR) ERC20("Gaming ENCTR", "gENCTR", 18) {
         initializer = msg.sender;
 
         require(_sENCTR != address(0), "Zero address: sENCTR");
