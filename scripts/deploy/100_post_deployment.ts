@@ -119,7 +119,8 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   // await encountr.approve(staking.address, LARGE_APPROVAL);
 
   // Step 6: link staking to gENCTR
-  if (await !gEnctr.ready()) {
+  const ready = await gEnctr.ready();
+  if (!ready) {
     await waitFor(gEnctr.initialize(staking.address));
     console.log("Setup -- link staking to gENCTR");
   } else {
