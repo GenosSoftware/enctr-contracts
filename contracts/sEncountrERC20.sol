@@ -47,7 +47,7 @@ contract sEncountr is IsENCTR, ERC20Permit {
     uint256 internal INDEX; // Index Gons - tracks rebase growth
 
     address public stakingContract; // balance used to calc rebase
-    IgENCTR public gENCTR; // additional staked supply (governance token)
+    IgENCTR public gENCTR; // additional staked supply (gaming token)
 
     Rebase[] public rebases; // past rebase data
 

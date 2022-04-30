@@ -7,8 +7,6 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
-  console.log(deployer);
-
   await deploy(CONTRACTS.authority, {
     from: deployer,
     args: [deployer, deployer, deployer, deployer],

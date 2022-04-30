@@ -63,10 +63,15 @@ const config: HardhatUserConfig = {
     ropsten: {
       url: `https://eth-ropsten.alchemyapi.io/v2/${alchemyApiKey}`,
       accounts: [privateKey],
+      tags: ["staging"],
     },
     rinkeby: {
       url: `https://eth-rinkeby.alchemyapi.io/v2/${alchemyApiKey}`,
       accounts: [privateKey],
+      tags: ["staging"],
+    },
+    hardhat: {
+      tags: ["dev"],
     },
   },
   namedAccounts: {
