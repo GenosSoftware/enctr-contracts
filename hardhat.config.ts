@@ -9,6 +9,7 @@ import "solidity-coverage";
 import "@openzeppelin/hardhat-upgrades";
 
 import "hardhat-deploy";
+import "hardhat-deploy-tenderly";
 
 dotenv.config();
 
@@ -88,6 +89,10 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
+  },
+  tenderly: {
+    project: "encountr",
+    username: "ivansoban",
   },
 };
 
