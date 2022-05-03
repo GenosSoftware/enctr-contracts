@@ -28,7 +28,7 @@ func.tags = [CONTRACTS.distributor, "staking"];
 func.dependencies = [
     CONTRACTS.treasury,
     CONTRACTS.encountr,
-    CONTRACTS.bondingCalculator,
+    CONTRACTS.staking,
     CONTRACTS.authority,
 ];
 
