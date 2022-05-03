@@ -18,5 +18,6 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 };
 
 func.tags = [CONTRACTS.gEnctr, "tokens"];
+func.dependencies = [CONTRACTS.sEnctr];
 
 export default func;

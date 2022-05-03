@@ -153,7 +153,10 @@ contract sEncountr is IsENCTR, ERC20Permit {
         uint256 profit_,
         uint256 epoch_
     ) internal {
-        uint256 rebasePercent = profit_.mul(1e18).div(previousCirculating_);
+        uint256 rebasePercent = profit_;
+        if (previousCirculating_ > 0) {
+            rebasePercent = rebasePercent.mul(1e18).div(previousCirculating_);
+        }
         rebases.push(
             Rebase({
                 epoch: epoch_,
