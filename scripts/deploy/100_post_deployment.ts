@@ -8,7 +8,6 @@ import {
   BOUNTY_AMOUNT,
 } from "../constants"; // eslint-disable-line node/no-missing-import
 import {
-  EncountrAuthority__factory, // eslint-disable-line camelcase
   Distributor__factory, // eslint-disable-line camelcase
   // EncountrERC20Token__factory, // eslint-disable-line camelcase
   EncountrStaking__factory, // eslint-disable-line camelcase
@@ -23,8 +22,6 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deployer } = await getNamedAccounts();
   const signer = await ethers.provider.getSigner(deployer);
 
-  const authorityDeployment = await deployments.get(CONTRACTS.authority);
-  // const encountrDeployment = await deployments.get(CONTRACTS.encountr);
   const sEnctrDeployment = await deployments.get(CONTRACTS.sEnctr);
   const gEnctrDeployment = await deployments.get(CONTRACTS.gEnctr);
   const distributorDeployment = await deployments.get(CONTRACTS.distributor);
@@ -32,11 +29,6 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const stakingDeployment = await deployments.get(CONTRACTS.staking);
   const bondDepoDeployment = await deployments.get(CONTRACTS.bondDepo);
 
-  const authorityContract = await EncountrAuthority__factory.connect(
-    authorityDeployment.address,
-    signer
-  );
-  // const encountr = EncountrERC20Token__factory.connect(encountrDeployment.address, signer);
   const sEnctr = SEncountr__factory.connect(sEnctrDeployment.address, signer);
   const gEnctr = GENCTR__factory.connect(gEnctrDeployment.address, signer);
   const distributor = Distributor__factory.connect(
@@ -56,11 +48,7 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     signer
   );
 
-  // Step 1: Set treasury as vault on authority
-  await waitFor(authorityContract.pushVault(treasury.address, true));
-  console.log("Setup -- authorityContract.pushVault: set vault on authority");
-
-  // Step 2: Set distributor as minter on treasury
+  // Step 1: Set distributor as minter on treasury
   await waitFor(
     treasury.enable(8, distributor.address, ethers.constants.AddressZero)
   ); // Allows distributor to mint encountr.
@@ -68,11 +56,11 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     "Setup -- treasury.enable(8):  distributor enabled to mint encountr on treasury"
   );
 
-  // Step 3: Set distributor on staking
+  // Step 2: Set distributor on staking
   await waitFor(staking.setDistributor(distributor.address));
   console.log("Setup -- staking.setDistributor:  distributor set on staking");
 
-  // Step 4: Initialize sENCTR and set the index
+  // Step 3: Initialize sENCTR and set the index
   if ((await sEnctr.gENCTR()) === ethers.constants.AddressZero) {
     await waitFor(sEnctr.setIndex(INITIAL_INDEX)); // TODO
     await waitFor(sEnctr.setgENCTR(gEnctr.address));
@@ -84,7 +72,7 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     console.log("Non-Setup -- sencountr already initialized");
   }
 
-  // Step 5: Set up distributor with bounty and recipient
+  // Step 4: Set up distributor with bounty and recipient
   if (!(await distributor.bounty()).eq(BOUNTY_AMOUNT)) {
     await waitFor(distributor.setBounty(BOUNTY_AMOUNT));
     console.log("Setup -- distributor.setBounty");
@@ -118,7 +106,7 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   // TODO: Is this needed?
   // await encountr.approve(staking.address, LARGE_APPROVAL);
 
-  // Step 6: link staking to gENCTR
+  // Step 5: link staking to gENCTR
   const ready = await gEnctr.ready();
   if (!ready) {
     await waitFor(gEnctr.initialize(staking.address));
@@ -127,7 +115,7 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     console.log("Non-Setup -- link staking to gENCTR");
   }
 
-  // Step 7: add bond depo
+  // Step 6: add bond depo
   await waitFor(
     treasury.enable(8, bondDepo.address, ethers.constants.AddressZero)
   ); // Allows bond depo to mint encountr.

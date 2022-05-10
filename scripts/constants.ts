@@ -7,7 +7,7 @@ export const CONTRACTS: Record<string, string> = {
   encountr: "EncountrERC20Token",
   gEnctr: "gENCTR",
   sEnctr: "sEncountr",
-  sales: "EncountrPrivateSales",
+  sales: "EncountrPresale",
   pEnctr: "pEncountr",
   vesting: "ExercisepENCTR",
   staking: "EncountrStaking",
