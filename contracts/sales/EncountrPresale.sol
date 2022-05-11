@@ -119,12 +119,15 @@ contract EncountrPresale is EncountrAccessControlled {
     function buy(uint256 _amountOfEnctr) external {
         require(active, "sale is not active");
         require(allowed[msg.sender], "buyer not approved");
-        require(_amountOfEnctr >= min, "below minimum for sale.");
-        require(_amountOfEnctr <= max, "above maximum for sale.");
+
+        uint256 size = orderSize[msg.sender];
+        uint256 total = size + _amountOfEnctr;
+        require(total >= min, "below minimum for sale.");
+        require(total <= max, "above maximum for sale.");
 
         (uint256 totalPrice,) = _totalPrice(_amountOfEnctr);
         purchaseToken.safeTransferFrom(msg.sender, address(this), totalPrice);
-        orderSize[msg.sender] = _amountOfEnctr;
+        orderSize[msg.sender] = total;
     }
 
     function _claim(address _buyer) internal {
@@ -144,11 +147,11 @@ contract EncountrPresale is EncountrAccessControlled {
     }
 
     function refund() external {
-        require(!finished, "this sale has been finalized.");
         uint256 size = orderSize[msg.sender];
-        require(size > 0, "address has not purchased.");
+        require(size > 0, "nothing to refund.");
         (uint256 totalPrice,) = _totalPrice(size);
         purchaseToken.safeTransfer(msg.sender, totalPrice);
+        orderSize[msg.sender] = 0;
     }
 
     function withdrawTokens(address _tokenToWithdraw) external onlyGovernor() {

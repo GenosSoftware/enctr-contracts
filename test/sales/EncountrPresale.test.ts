@@ -153,7 +153,7 @@ describe("EncountrPresale", function () {
     */
   });
 
-  it("can refund before finish", async function () {
+  it("cannot refund multiple times", async function () {
     const amountToBuy = ethers.BigNumber.from(76).mul(
       ethers.BigNumber.from(10).pow(eDecimals)
     );
@@ -177,17 +177,23 @@ describe("EncountrPresale", function () {
     expect(await stablecoin.balanceOf(buyerAccounts[0].address)).to.equal(
       amountToSpend
     );
+    await expect(sales.connect(buyerAccounts[0]).refund()).to.be.revertedWith(
+      "nothing to refund."
+    );
   });
 
-  it("cannot refund after finish or without purchase", async function () {
+  it("cannot refund without purchase", async function () {
     await sales.start();
+    await expect(sales.connect(buyerAccounts[0]).refund()).to.be.revertedWith(
+      "nothing to refund."
+    );
     await sales.stop();
     await expect(sales.connect(buyerAccounts[0]).refund()).to.be.revertedWith(
-      "address has not purchased."
+      "nothing to refund."
     );
     await sales.finish();
     await expect(sales.connect(buyerAccounts[0]).refund()).to.be.revertedWith(
-      "this sale has been finalized."
+      "nothing to refund."
     );
   });
 
