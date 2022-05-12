@@ -134,6 +134,7 @@ contract EncountrPresale is EncountrAccessControlled {
         require(finished, "this sale is not been finalized.");
         require(orderSize[_buyer] > 0, "this address has not ordered.");
         _buyFromTreasury(_buyer, orderSize[_buyer]);
+        orderSize[_buyer] = 0;
     }
 
     function claim() external {

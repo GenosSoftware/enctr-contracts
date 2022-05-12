@@ -303,6 +303,16 @@ describe("EncountrPresale", function () {
     expect(await erc20.balanceOf(buyerAccounts[0].address)).to.equal(
       amountToBuy
     );
+    await expect(sales.connect(buyerAccounts[0]).claim()).to.be.revertedWith(
+      "this address has not ordered."
+    );
+    expect(await erc20.balanceOf(buyerAccounts[0].address)).to.equal(
+      amountToBuy
+    );
+    await expect(sales.connect(buyerAccounts[0]).refund()).to.be.revertedWith(
+      "nothing to refund."
+    );
+    expect(await stablecoin.balanceOf(buyerAccounts[0].address)).to.equal(0);
   });
 
   it("can claim for someone else", async function () {
