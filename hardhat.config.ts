@@ -71,9 +71,9 @@ const config: HardhatUserConfig = {
       accounts: [privateKey],
       tags: ["staging"],
     },
-    hardhat: {
-      tags: ["dev"],
-    },
+    // hardhat: {
+    //   tags: ["dev"],
+    // },
   },
   namedAccounts: {
     deployer: {
