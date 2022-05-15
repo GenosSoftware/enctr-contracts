@@ -61,6 +61,11 @@ const config: HardhatUserConfig = {
     deployments: "./deployments",
   },
   networks: {
+    mainnet: {
+      url: `https://eth-mainnet.alchemyapi.io/v2/${alchemyApiKey}`,
+      accounts: [privateKey],
+      tags: ["production"],
+    },
     ropsten: {
       url: `https://eth-ropsten.alchemyapi.io/v2/${alchemyApiKey}`,
       accounts: [privateKey],
