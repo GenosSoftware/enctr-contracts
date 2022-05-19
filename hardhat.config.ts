@@ -66,19 +66,16 @@ const config: HardhatUserConfig = {
       accounts: [privateKey],
       tags: ["production"],
     },
-    ropsten: {
-      url: `https://eth-ropsten.alchemyapi.io/v2/${alchemyApiKey}`,
-      accounts: [privateKey],
-      tags: ["staging"],
-    },
     rinkeby: {
       url: `https://eth-rinkeby.alchemyapi.io/v2/${alchemyApiKey}`,
       accounts: [privateKey],
       tags: ["staging"],
     },
-    // hardhat: {
-    //   tags: ["dev"],
-    // },
+    mumbai: {
+      url: `https://polygon-mumbai.g.alchemy.com/v2/${alchemyApiKey}`,
+      accounts: [privateKey],
+      tags: ["staging"],
+    },
   },
   namedAccounts: {
     deployer: {
@@ -86,6 +83,7 @@ const config: HardhatUserConfig = {
     },
     dai: {
       1: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+      137: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
     },
   },
   gasReporter: {
