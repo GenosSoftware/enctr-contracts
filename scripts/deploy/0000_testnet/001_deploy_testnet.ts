@@ -73,12 +73,14 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const encountrMinted = await encountr.balanceOf(deployer);
   console.log("Enctr minted: ", encountrMinted.toString());
 
+  /*
   // Fund faucet w/ newly minted dai.
   await waitFor(encountr.approve(faucetDeployment.address, encountrMinted));
   await waitFor(encountr.transfer(faucetDeployment.address, encountrMinted));
 
   faucetBalance = await encountr.balanceOf(faucetDeployment.address);
   console.log("Faucet balance:", faucetBalance.toString());
+  */
 };
 
 func.tags = ["faucet", "testnet"];
