@@ -198,7 +198,7 @@ contract Distributor is IDistributor, EncountrAccessControlled {
         );
         require(info[_index].recipient != address(0), "Recipient does not exist");
 
-        if (msg.sender == authority.guardian()) {
+        if (msg.sender == authority.guardian() && msg.sender != authority.governor()) {
             require(_rate <= info[_index].rate.mul(25).div(1000), "Limiter: cannot adjust by >2.5%");
         }
 
