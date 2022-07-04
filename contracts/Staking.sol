@@ -22,6 +22,7 @@ contract EncountrStaking is EncountrAccessControlled {
     /* ========== EVENTS ========== */
 
     event DistributorSet(address distributor);
+    event Stake(address staker);
     event WarmupSet(uint256 warmup);
 
     /* ========== DATA STRUCTURES ========== */
@@ -93,6 +94,7 @@ contract EncountrStaking is EncountrAccessControlled {
     ) external returns (uint256) {
         ENCTR.safeTransferFrom(msg.sender, address(this), _amount);
         _amount = _amount.add(rebase()); // add bounty if rebase occurred
+        emit Stake(_to);
         if (_claim && warmupPeriod == 0) {
             return _send(_to, _amount, _rebasing);
         } else {
