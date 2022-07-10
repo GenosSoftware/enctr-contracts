@@ -6,7 +6,7 @@ import { CONTRACTS } from "../../constants"; // eslint-disable-line node/no-miss
 const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deployments, getNamedAccounts, network } = hre;
 
-  if (network.name === "mainnet") {
+  if (network.tags.production) {
     console.log("DAI cannot be deployed to mainnet");
     return;
   }

@@ -13,7 +13,7 @@ const faucetContract = "EnctrFaucet";
 const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deployments, getNamedAccounts, network, ethers } = hre;
 
-  if (network.name === "mainnet") {
+  if (network.tags.production) {
     console.log("Faucet cannot be deployed to mainnet");
     return;
   }

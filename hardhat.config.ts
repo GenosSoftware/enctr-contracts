@@ -66,6 +66,11 @@ const config: HardhatUserConfig = {
       accounts: [privateKey],
       tags: ["production"],
     },
+    polygon: {
+      url: `https://polygon-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+      accounts: [privateKey],
+      tags: ["production"],
+    },
     rinkeby: {
       url: `https://eth-rinkeby.alchemyapi.io/v2/${alchemyApiKey}`,
       accounts: [privateKey],

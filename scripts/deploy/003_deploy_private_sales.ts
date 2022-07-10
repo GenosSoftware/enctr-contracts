@@ -27,7 +27,7 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   );
 
   let daiAddress = dai;
-  if (network.name !== "mainnet") {
+  if (!network.tags.production) {
     daiAddress = (await deployments.get(CONTRACTS.DAI)).address;
   }
 

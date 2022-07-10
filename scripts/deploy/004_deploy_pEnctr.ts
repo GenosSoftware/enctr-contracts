@@ -20,7 +20,7 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const pEnctrDeployment = await deployments.get(CONTRACTS.pEnctr);
 
   let daiAddress = dai;
-  if (network.name !== "mainnet") {
+  if (!network.tags.production) {
     daiAddress = (await deployments.get(CONTRACTS.DAI)).address;
   }
 
