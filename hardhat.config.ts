@@ -99,8 +99,8 @@ const config: HardhatUserConfig = {
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
   tenderly: {
-    project: "encountr",
-    username: "ivansoban",
+    project: "enctr",
+    username: "genos",
   },
 };
 
